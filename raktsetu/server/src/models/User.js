@@ -83,7 +83,7 @@ userSchema.pre('save', async function(next) {
   
   if (this.role === 'Donor') {
     try {
-      const DonorStatus = mongoose.model('DonorStatus');
+      const DonorStatus = require('./DonorStatus');
       await DonorStatus.findOneAndUpdate(
         { donor: this._id },
         {

@@ -628,8 +628,6 @@ exports.firebaseRegister = async (req, res) => {
   }
 };
 
-};
-
 exports.supabaseLogin = async (req, res) => {
   try {
     const { accessToken } = req.body;
@@ -924,6 +922,44 @@ exports.supabaseSync = async (req, res) => {
     });
   } catch (error) {
     console.error(`[Supabase Sync] Error: ${error.message}`);
+    res.status(500).json({ message: 'Failed to sync status.', error: error.message });
+  }
+};
+
+exports.firebaseSync = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ message: 'Firebase ID Token is required.' });
+    }
+
+    const decodedToken = await verifyFirebaseIdToken(idToken);
+    const { uid } = decodedToken;
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    if (user.firebaseUid !== uid && user.email !== decodedToken.email.toLowerCase()) {
+      return res.status(403).json({ message: 'Token identity mismatch.' });
+    }
+
+    user.isEmailVerified = true;
+    if (!user.firebaseUid) {
+      user.firebaseUid = uid;
+    }
+    await user.save();
+
+    const userResponse = user.toObject();
+    if (userResponse.password) delete userResponse.password;
+
+    res.status(200).json({
+      message: 'Email verification status synced successfully.',
+      user: userResponse
+    });
+  } catch (error) {
+    console.error(`[Firebase Sync] Error: ${error.message}`);
     res.status(500).json({ message: 'Failed to sync status.', error: error.message });
   }
 };
