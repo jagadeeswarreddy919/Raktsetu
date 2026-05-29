@@ -1,0 +1,192 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans antialiased overflow-x-hidden;
+  }
+}
+
+/* Glassmorphism Presets */
+.glass-card-light {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 32px 0 rgba(220, 38, 38, 0.04);
+}
+
+.glass-card-dark {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Premium Glow Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-dark-100 dark:bg-dark-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary-500 rounded-full transition-colors;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary-600;
+}
+
+/* Custom Micro-Animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.6;
+  }
+}
+
+.glow-ring {
+  position: relative;
+}
+.glow-ring::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: inherit;
+  border: 2px solid theme('colors.primary.500');
+  animation: pulseGlow 2s infinite ease-in-out;
+  pointer-events: none;
+}
+
+/* Appreciation Certificate Print Isolation Layout */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .print-certificate-area, .print-certificate-area * {
+    visibility: visible !important;
+  }
+  .print-certificate-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    background: #faf8f5 !important;
+    color: #1e293b !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .print-exclude {
+    display: none !important;
+  }
+}
+
+/* Contributions Heatmap Color Levels */
+.heatmap-cell-0 {
+  background-color: rgba(226, 232, 240, 0.2); /* very light */
+}
+.dark .heatmap-cell-0 {
+  background-color: rgba(30, 41, 59, 0.4);
+}
+.heatmap-level-1 {
+  background-color: rgba(239, 68, 68, 0.2);
+}
+.heatmap-level-2 {
+  background-color: rgba(239, 68, 68, 0.4);
+}
+.heatmap-level-3 {
+  background-color: rgba(239, 68, 68, 0.7);
+}
+.heatmap-level-4 {
+  background-color: rgba(239, 68, 68, 1);
+}
+
+/* SOS Emergency Pulses */
+@keyframes sosPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8), inset 0 0 0 0 rgba(239, 68, 68, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(239, 68, 68, 0), inset 0 0 15px 5px rgba(239, 68, 68, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), inset 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.sos-pulse-border {
+  animation: sosPulse 2.5s infinite;
+  border: 3px solid #ef4444 !important;
+}
+
+/* Compact mode spacing scale overrides */
+.compact-mode .py-10 {
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+}
+.compact-mode .py-8 {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+.compact-mode .p-8 {
+  padding: 1rem !important;
+}
+.compact-mode .p-6 {
+  padding: 0.75rem !important;
+}
+.compact-mode .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 1rem !important;
+}
+.compact-mode .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0.75rem !important;
+}
+
+/* Spinning slow animation */
+.animate-spin-slow {
+  animation: spin 10s linear infinite;
+}
+
+/* Premium Notification Toast Animations */
+@keyframes notificationSlideIn {
+  0% {
+    transform: translateX(120%) scale(0.92);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(-8%) scale(1.02);
+  }
+  80% {
+    transform: translateX(3%) scale(0.99);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-notification-in {
+  animation: notificationSlideIn 0.48s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+

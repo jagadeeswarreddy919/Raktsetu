@@ -1,0 +1,98 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "RAKTSETU Enterprise Platform API Specs",
+    "description": "REST APIs orchestrating secure authentication, real-time messaging, map-free location filtering, and regional emergency blood assistance campaigns.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api",
+      "description": "Development Server"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "summary": "Register a new user (Donor, Recipient, or Hospital)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fullName": { "type": "string" },
+                  "email": { "type": "string" },
+                  "password": { "type": "string" },
+                  "phone": { "type": "string" },
+                  "role": { "type": "string", "enum": ["Donor", "Recipient", "Hospital"] },
+                  "state": { "type": "string" },
+                  "district": { "type": "string" },
+                  "city": { "type": "string" },
+                  "pincode": { "type": "string" },
+                  "bloodGroup": { "type": "string" },
+                  "hospitalLicenseNumber": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User created successfully with active JWT token." }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Sign in utilizing credentials",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "JWT payload verified." }
+        }
+      }
+    },
+    "/requests": {
+      "post": {
+        "summary": "Publish a blood request ticket (Authorized only)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Ticket submitted successfully." }
+        }
+      },
+      "get": {
+        "summary": "List all active blood requests",
+        "parameters": [
+          { "name": "state", "in": "query", "schema": { "type": "string" } },
+          { "name": "city", "in": "query", "schema": { "type": "string" } },
+          { "name": "bloodGroup", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Array list retrieved." }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
