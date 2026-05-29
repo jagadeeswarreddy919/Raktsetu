@@ -45,13 +45,58 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// API Rate Limiter
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100000, // Loosened for local testing (limit each IP to 100000 requests per windowMs)
+// API Rate Limiter Configuration (Configurable via environment variables)
+const rateLimitWindowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000;
+
+// Strict rate limiter for sensitive authentication, registration, & OTP endpoints
+const authLimiter = rateLimit({
+  windowMs: rateLimitWindowMs,
+  max: parseInt(process.env.RATE_LIMIT_MAX_AUTH) || 30, // Default 30 attempts per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many authentication or OTP attempts from this IP. Please try again after 15 minutes.' }
+});
+
+// Standard rate limiter for general API routes (looser to support SPA telemetry polling)
+const generalLimiter = rateLimit({
+  windowMs: rateLimitWindowMs,
+  max: parseInt(process.env.RATE_LIMIT_MAX_GENERAL) || 5000, // Default 5000 requests per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { message: 'Too many requests from this IP. Please try again later.' }
 });
-app.use('/api/', apiLimiter);
+
+// Sensitive authentication and recovery endpoints to protect with strict rate limiting
+const sensitiveAuthRoutes = [
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/firebase-login',
+  '/api/auth/firebase-register',
+  '/api/auth/supabase-login',
+  '/api/auth/supabase-register',
+  '/api/auth/mock-send-verification',
+  '/api/auth/mock-verify-email',
+  '/api/auth/mock-verify-email-otp',
+  '/api/auth/mock-forgot-password',
+  '/api/auth/admin-forgot-password',
+  '/api/auth/admin-reset-password',
+  '/api/auth/user-forgot-password',
+  '/api/auth/user-reset-password',
+  '/api/auth/admin-forgot-password-email',
+  '/api/auth/user-forgot-password-email',
+  '/api/auth/admin-verify-otp',
+  '/api/auth/user-verify-otp',
+  '/api/auth/admin-resend-sms',
+  '/api/auth/user-resend-sms'
+];
+
+// Register strict rate limiting on all sensitive authentication routes
+sensitiveAuthRoutes.forEach(route => {
+  app.use(route, authLimiter);
+});
+
+// Apply general rate limiting to all other API endpoints
+app.use('/api/', generalLimiter);
 
 // Route Bindings
 app.use('/api/auth', authRoutes);
