@@ -3233,9 +3233,9 @@ const DonorDashboard = () => {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center gap-1 text-[10px] font-extrabold ${isActive ? uiTheme.text : 'text-slate-400'}`}
+              className={`flex flex-col items-center gap-1.5 text-[10px] font-extrabold transition-all hover:scale-110 active:scale-95 ${isActive ? uiTheme.text : 'text-slate-400 dark:text-slate-500'}`}
             >
-              <ItemIcon className="w-5 h-5" />
+              <ItemIcon className="w-7 h-7" />
               <span>{item.label}</span>
             </button>
           );

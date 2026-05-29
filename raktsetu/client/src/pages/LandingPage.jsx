@@ -5,7 +5,8 @@ import {
   Heart, Users, CheckCircle, Search, Award, Share2, Info, HelpCircle,
   MapPin, Phone, Mail, Clock, ChevronDown, BookOpen, MessageSquare,
   Shield, Bell, Star, BarChart3, Plus, ArrowRight, ShieldAlert,
-  Check, Play, Smartphone, Laptop, Compass, HeartHandshake, ShieldCheck
+  Check, Play, Smartphone, Laptop, Compass, HeartHandshake, ShieldCheck,
+  LogIn
 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -262,7 +263,7 @@ const LandingPage = () => {
       if (token) {
         navigate(getDashboardPath());
       } else {
-        navigate('/register');
+        navigate('/login');
       }
     }
   };
@@ -1393,12 +1394,12 @@ const LandingPage = () => {
       />
 
       {/* Mobile home navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 dark:bg-dark-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 py-2 px-4 flex justify-around print:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 dark:bg-dark-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 py-2 px-4 flex justify-around print:hidden animate-slide-up">
         {[
           { id: 'home', label: 'Home', icon: Heart },
           { id: 'requests', label: 'Search', icon: Search },
           { id: 'chat', label: 'Chat', icon: MessageSquare },
-          { id: 'profile', label: user ? 'Dashboard' : 'Join', icon: Users }
+          { id: 'profile', label: user ? 'Dashboard' : 'Login', icon: user ? Users : LogIn }
         ].map((item) => {
           const Icon = item.icon;
           return (
@@ -1406,9 +1407,9 @@ const LandingPage = () => {
               key={item.id}
               type="button"
               onClick={() => handleLandingNav(item.id)}
-              className="flex flex-col items-center gap-0.5 text-[10px] font-extrabold text-slate-500 hover:text-rose-600"
+              className="flex flex-col items-center gap-1.5 text-[10px] font-extrabold text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-500 transition-all hover:scale-110 active:scale-95"
             >
-              <Icon className="w-5 h-5" />
+              <Icon className="w-7 h-7 text-slate-600 dark:text-slate-300" />
               {item.label}
             </button>
           );
