@@ -10,6 +10,7 @@
     "purge-demo": "node src/utils/purgeDemoData.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.106.2",
     "axios": "^1.16.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

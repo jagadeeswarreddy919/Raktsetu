@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { notifyUser } = require('../config/socket');
 const { sendPushNotification, verifyFirebaseIdToken } = require('../utils/firebase');
+const { verifySupabaseToken } = require('../utils/supabase');
 const { buildGreetingMessage, getTimeBasedGreeting } = require('../utils/greeting');
 const { sendMail } = require('../config/mail');
 const { sendSMS } = require('../utils/sms');
@@ -627,30 +628,290 @@ exports.firebaseRegister = async (req, res) => {
   }
 };
 
-exports.firebaseSync = async (req, res) => {
+};
+
+exports.supabaseLogin = async (req, res) => {
   try {
-    const { idToken } = req.body;
-    if (!idToken) {
-      return res.status(400).json({ message: 'Firebase ID Token is required.' });
+    const { accessToken } = req.body;
+    if (!accessToken) {
+      return res.status(400).json({ message: 'Supabase Access Token is required.' });
     }
 
-    const decodedToken = await verifyFirebaseIdToken(idToken);
-    const { uid, email_verified } = decodedToken;
+    const decodedToken = await verifySupabaseToken(accessToken);
+    const { uid, email, email_verified, name } = decodedToken;
+
+    // Look for user by supabaseUid, firebaseUid, or email
+    let user = await User.findOne({ 
+      $or: [
+        { supabaseUid: uid },
+        { firebaseUid: uid },
+        { email: email.toLowerCase() }
+      ]
+    });
+
+    if (!user) {
+      // Return details for pre-filled signup
+      return res.status(200).json({
+        isNewUser: true,
+        email,
+        supabaseUid: uid,
+        fullName: name || ''
+      });
+    }
+
+    if (user.status === 'Suspended') {
+      return res.status(403).json({ message: 'Your account has been suspended. Contact support.' });
+    }
+
+    // Update Supabase associations and verification status
+    let needsSave = false;
+    if (!user.supabaseUid) {
+      user.supabaseUid = uid;
+      needsSave = true;
+    }
+    if (user.isEmailVerified !== true) {
+      user.isEmailVerified = true;
+      needsSave = true;
+    }
+
+    if (needsSave) {
+      await user.save();
+    }
+
+    // Audit logs
+    await AuditLog.create({
+      action: 'USER_LOGIN_SUPABASE',
+      performedBy: user._id,
+      role: user.role,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+
+    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const greetingMsg = buildGreetingMessage(user.fullName);
+
+    try {
+      await Notification.create({
+        recipient: user._id,
+        type: 'greeting',
+        message: greetingMsg,
+        requestStatus: 'None'
+      });
+      notifyUser(user._id, 'greeting', {
+        title: `${getTimeBasedGreeting()}!`,
+        message: greetingMsg,
+        type: 'greeting'
+      });
+    } catch (greetErr) {
+      console.warn('[Supabase Login] Greeting notification skipped:', greetErr.message);
+    }
+
+    const userResponse = user.toObject();
+    if (userResponse.password) delete userResponse.password;
+
+    res.status(200).json({
+      token,
+      user: userResponse,
+      greeting: greetingMsg
+    });
+  } catch (error) {
+    console.error(`[Supabase Login] Error: ${error.message}`);
+    res.status(500).json({ message: 'Server error during Supabase login.', error: error.message });
+  }
+};
+
+exports.supabaseRegister = async (req, res) => {
+  try {
+    const {
+      accessToken, fullName, phone, role,
+      state, district, city, area, village, pincode, address,
+      bloodGroup, DOB, gender, weight, medicalConditions, allergies,
+      hospitalLicenseNumber, referredByCode
+    } = req.body;
+
+    if (!accessToken) {
+      return res.status(400).json({ message: 'Supabase Access Token is required.' });
+    }
+
+    if (role === 'Admin' || role === 'Super Admin') {
+      return res.status(403).json({ message: 'Registration of Administrative accounts is restricted.' });
+    }
+
+    const decodedToken = await verifySupabaseToken(accessToken);
+    const { uid, email } = decodedToken;
+
+    const existingUser = await User.findOne({ 
+      $or: [
+        { supabaseUid: uid },
+        { email: email.toLowerCase() }
+      ]
+    });
+    
+    if (existingUser) {
+      return res.status(400).json({ message: 'A user with this email or Supabase UID already exists.' });
+    }
+
+    const existingPhone = await User.findOne({ phone });
+    if (existingPhone) {
+      return res.status(400).json({ message: 'A user with this phone number already exists.' });
+    }
+
+    const referralCode = generateReferralCode(fullName);
+
+    // Build user record
+    const userPayload = {
+      fullName,
+      email: email.toLowerCase(),
+      supabaseUid: uid,
+      isEmailVerified: true,
+      phone,
+      role: role || 'Donor',
+      state,
+      district,
+      city,
+      area,
+      village,
+      pincode,
+      address,
+      referralCode,
+      rewardPoints: 50 // Welcome points
+    };
+
+    // Conditional profile items
+    if (role === 'Donor') {
+      userPayload.bloodGroup = bloodGroup;
+      userPayload.DOB = DOB;
+      userPayload.gender = gender;
+      userPayload.weight = weight;
+      userPayload.medicalConditions = medicalConditions || [];
+      userPayload.allergies = allergies || [];
+    } else if (role === 'Hospital') {
+      userPayload.hospitalLicenseNumber = hospitalLicenseNumber;
+      userPayload.isVerifiedHospital = false; // Requires admin verification
+      userPayload.bloodInventory = {
+        'A+': 0, 'A-': 0, 'B+': 0, 'B-': 0, 'AB+': 0, 'AB-': 0, 'O+': 0, 'O-': 0
+      };
+    }
+
+    // Referral matching
+    let referrer = null;
+    if (referredByCode) {
+      referrer = await User.findOne({ referralCode: referredByCode.toUpperCase() });
+      if (referrer) {
+        userPayload.referredBy = referrer._id;
+      }
+    }
+
+    const newUser = await User.create(userPayload);
+
+    // Apply points to the referrer if present
+    if (referrer) {
+      referrer.rewardPoints += 100; // 100 points for inviting
+      referrer.totalReferrals += 1;
+      referrer.referralHistory.push({
+        referredUser: newUser._id,
+        pointsEarned: 100
+      });
+
+      // Update badge thresholds
+      if (referrer.totalReferrals === 1 && !referrer.badges.includes('First Invite')) {
+        referrer.badges.push('First Invite');
+      }
+      if (referrer.totalReferrals === 5 && !referrer.badges.includes('Super Recruiter')) {
+        referrer.badges.push('Super Recruiter');
+      }
+
+      await referrer.save();
+    }
+
+    // Log the event
+    await AuditLog.create({
+      action: 'USER_REGISTER_SUPABASE',
+      performedBy: newUser._id,
+      role: newUser.role,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      details: { role: newUser.role, referred: !!referrer }
+    });
+
+    const token = jwt.sign({ id: newUser._id, role: newUser.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+    const userResponse = newUser.toObject();
+    if (userResponse.password) delete userResponse.password;
+
+    // Send Greeting Alerts
+    try {
+      const greetingSubject = 'Welcome to RaktSetu!';
+      const greetingMsg = `Hi ${newUser.fullName}, welcome to RaktSetu! Thank you for joining as a ${newUser.role}. Your welcome reward of 50 points has been credited. Together, we bridge lives through blood coordinates.`;
+      
+      await Notification.create({
+        recipient: newUser._id,
+        type: 'greeting',
+        message: greetingMsg,
+        requestStatus: 'None'
+      });
+      
+      notifyUser(newUser._id, 'greeting', {
+        title: 'Welcome to RaktSetu!',
+        message: greetingMsg,
+        type: 'greeting'
+      });
+
+      await sendSMS({
+        to: newUser.phone,
+        message: greetingMsg
+      });
+
+      const emailHtml = getEmailTemplate(
+        'Welcome to RaktSetu!',
+        `Thank you for registering on RaktSetu as a <strong>${newUser.role}</strong>.<br><br>` +
+        `Your unique referral code is <strong>${newUser.referralCode}</strong>. Invite your friends to earn additional reward points!<br><br>` +
+        `We have credited <strong>50 Welcome Points</strong> to your account profile as a token of our appreciation.<br><br>` +
+        `Get started by logging into your dedicated dashboard to search matching donors, update your inventory, or post request credentials.`,
+        'http://localhost:5173/login',
+        'Access Dashboard'
+      );
+      await sendMail({
+        to: newUser.email,
+        subject: greetingSubject,
+        html: emailHtml
+      });
+    } catch (alertErr) {
+      console.warn('[Supabase Register Alerts] Failed to dispatch welcome notifications:', alertErr.message);
+    }
+
+    res.status(201).json({
+      token,
+      user: userResponse
+    });
+  } catch (error) {
+    console.error(`[Supabase Register] Error: ${error.message}`);
+    res.status(500).json({ message: 'Server error during registration.', error: error.message });
+  }
+};
+
+exports.supabaseSync = async (req, res) => {
+  try {
+    const { accessToken } = req.body;
+    if (!accessToken) {
+      return res.status(400).json({ message: 'Supabase Access Token is required.' });
+    }
+
+    const decodedToken = await verifySupabaseToken(accessToken);
+    const { uid } = decodedToken;
 
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    // Verify token UID matches local user firebaseUid or email matches
-    if (user.firebaseUid !== uid && user.email !== decodedToken.email.toLowerCase()) {
+    if (user.supabaseUid !== uid && user.email !== decodedToken.email.toLowerCase()) {
       return res.status(403).json({ message: 'Token identity mismatch.' });
     }
 
-    // Update verification status in MongoDB
     user.isEmailVerified = true;
-    if (!user.firebaseUid) {
-      user.firebaseUid = uid;
+    if (!user.supabaseUid) {
+      user.supabaseUid = uid;
     }
     await user.save();
 
@@ -662,7 +923,7 @@ exports.firebaseSync = async (req, res) => {
       user: userResponse
     });
   } catch (error) {
-    console.error(`[Firebase Sync] Error: ${error.message}`);
+    console.error(`[Supabase Sync] Error: ${error.message}`);
     res.status(500).json({ message: 'Failed to sync status.', error: error.message });
   }
 };

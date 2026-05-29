@@ -9,8 +9,9 @@ const referralHistorySchema = new mongoose.Schema({
 const userSchema = new mongoose.Schema({
   fullName: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-  password: { type: String, required: function() { return !this.firebaseUid; } },
+  password: { type: String, required: function() { return !this.firebaseUid && !this.supabaseUid; } },
   firebaseUid: { type: String, unique: true, sparse: true },
+  supabaseUid: { type: String, unique: true, sparse: true },
   isEmailVerified: { type: Boolean, default: true },
   phone: { type: String, required: true, unique: true },
   role: { 
