@@ -64,7 +64,7 @@ const CampaignHub = () => {
             className="w-full p-2 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs disabled:opacity-50"
           >
             <option value="">All Districts</option>
-            {state && Object.keys(STATES_DATA[state]).map(d => <option key={d} value={d}>{d}</option>)}
+            {Object.keys(STATES_DATA[state] || {}).map(d => <option key={d} value={d}>{d}</option>)}
           </select>
         </div>
 
@@ -77,7 +77,7 @@ const CampaignHub = () => {
             className="w-full p-2 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs disabled:opacity-50"
           >
             <option value="">All Cities</option>
-            {state && district && STATES_DATA[state][district].map(c => <option key={c} value={c}>{c}</option>)}
+            {(STATES_DATA[state]?.[district] || []).map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
       </div>

@@ -951,7 +951,7 @@ const LandingPage = () => {
                 className="w-full p-2.5 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-rose-500 focus:outline-none dark:text-white"
               >
                 <option value="">Select District</option>
-                {selectedState && Object.keys(STATES_DATA[selectedState]).map(d => <option key={d} value={d}>{d}</option>)}
+                {Object.keys(STATES_DATA[selectedState] || {}).map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
 
