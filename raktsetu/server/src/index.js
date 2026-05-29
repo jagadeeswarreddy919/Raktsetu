@@ -21,6 +21,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const galleryRoutes = require('./routes/galleryRoutes');
 
 const app = express();
+app.set('trust proxy', 1); // Trust the Render reverse proxy to get correct client IP for rate limiting
 const server = http.createServer(app);
 
 // Initialize database
