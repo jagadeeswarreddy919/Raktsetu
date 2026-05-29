@@ -49,7 +49,7 @@ function Initialize-PortableTools {
     }
 }
 
-function Ensure-LocalJavaAndMaven {
+function Initialize-LocalJavaAndMaven {
     if (-not (Test-Path $ToolsDir)) {
         New-Item -ItemType Directory -Path $ToolsDir -Force | Out-Null
     }
@@ -294,7 +294,7 @@ while ($true) {
         }
         "2" {
             # Ensure we have Java and Maven for the Analytics Service
-            Ensure-LocalJavaAndMaven
+            Initialize-LocalJavaAndMaven
             
             Write-Host "`n  Spawning Full RaktSetu System Architecture..." -ForegroundColor $Green
             
