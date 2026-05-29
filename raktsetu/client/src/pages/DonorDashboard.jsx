@@ -793,7 +793,13 @@ const DonorDashboard = () => {
         console.error('Failed to load notifications', err);
       }
     };
+    
     fetchNotifications();
+
+    // Background polling every 1 second to fetch real-time updates seamlessly in the UI list
+    const interval = setInterval(fetchNotifications, 1000);
+
+    return () => clearInterval(interval);
   }, [token]);
 
   const markAllRead = async () => {

@@ -397,6 +397,65 @@ const AppShell = () => {
     return () => socketRef.current?.disconnect();
   }, [isAuthenticated, user?._id, user?.role, triggerNotification]);
 
+  // Keep track of notification IDs we have already toasted to avoid duplicates
+  const shownNotificationIds = React.useRef(new Set());
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) {
+      shownNotificationIds.current.clear();
+      return;
+    }
+
+    const pollNotifications = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/notifications`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        const unreadNotifications = (res.data || []).filter(n => !n.read);
+        
+        unreadNotifications.forEach(n => {
+          if (!shownNotificationIds.current.has(n._id)) {
+            shownNotificationIds.current.add(n._id);
+            
+            let type = 'success';
+            let title = 'Notification';
+            
+            if (n.type === 'chat_message' || n.type === 'chat') {
+              type = 'chat';
+              title = 'New Message';
+            } else if (n.type === 'emergency' || n.bloodRequest?.emergencyMode) {
+              type = 'warning';
+              title = n.bloodRequest?.emergencyMode ? '🚨 Emergency Blood Request' : '🩸 Blood Request';
+            } else if (n.type === 'greeting') {
+              type = 'success';
+              title = '👋 Welcome';
+            }
+
+            triggerNotification({
+              id: n._id,
+              title: title,
+              message: n.message,
+              type: type,
+              chatPartnerId: n.donor?._id || n.donor,
+              chatId: n.chat,
+              requesterId: n.bloodRequest?.requester
+            });
+          }
+        });
+      } catch (err) {
+        console.error('Failed to poll background notifications:', err.message);
+      }
+    };
+
+    pollNotifications();
+
+    // Poll every 1 second (1000ms) to ensure Firebase/Supabase notifications sync immediately
+    const interval = setInterval(pollNotifications, 1000);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, token, triggerNotification]);
+
   useEffect(() => {
     if (isAuthenticated && token && !pushEnabled) {
       requestFcmToken().then((fcm) => {
