@@ -203,6 +203,10 @@ exports.login = async (req, res) => {
       return res.status(403).json({ message: 'Your account has been suspended. Contact support.' });
     }
 
+    if (!password || !user.password) {
+      return res.status(400).json({ message: 'Invalid credentials. This account may be using a federated login (Google/Supabase/Firebase) or is missing a password.' });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials. Password mismatch.' });
