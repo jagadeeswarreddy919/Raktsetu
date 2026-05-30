@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { MessageSquare, Send, Smile, Paperclip, CheckCheck, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, Smile, Paperclip, CheckCheck, Loader2, ArrowLeft, Activity, Heart, Gift, Bell } from 'lucide-react';
 import axios from 'axios';
 import { API_URL } from '../utils/api';
 
@@ -219,11 +219,25 @@ const ChatWorkspace = () => {
     return chat.participants.find(p => p._id !== user._id);
   };
 
+  const getDashboardLink = (tab = '') => {
+    if (!user) return '/';
+    let basePath = '/';
+    switch (user.role) {
+      case 'Super Admin':
+      case 'Admin': basePath = '/admin'; break;
+      case 'Donor': basePath = '/donor'; break;
+      case 'Recipient': basePath = '/recipient'; break;
+      case 'Hospital': basePath = '/hospital'; break;
+      default: basePath = '/';
+    }
+    return tab ? `${basePath}?tab=${tab}` : basePath;
+  };
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 h-[80vh] flex gap-6">
+    <div className="max-w-6xl mx-auto px-4 py-8 h-[80vh] flex flex-col md:flex-row gap-6 pb-24 md:pb-8">
       
       {/* Sidebar chats list */}
-      <div className="w-80 bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-lg flex flex-col overflow-hidden">
+      <div className={`w-full md:w-80 bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-lg flex flex-col overflow-hidden ${activeChat ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-4 border-b">
           <h3 className="font-bold text-sm text-slate-500 uppercase tracking-widest">Conversations</h3>
         </div>
@@ -275,14 +289,24 @@ const ChatWorkspace = () => {
       </div>
 
       {/* Main chat window container */}
-      <div className="flex-grow bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-lg flex flex-col overflow-hidden">
+      <div className={`flex-grow bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-lg flex flex-col overflow-hidden ${activeChat ? 'flex' : 'hidden md:flex'}`}>
         {activeChat ? (
           <>
             {/* Header info */}
-            <div className="p-4 border-b flex justify-between items-center bg-slate-50 dark:bg-dark-800/40">
-              <div>
-                <p className="font-bold text-sm">{getRecipientUser(activeChat)?.fullName}</p>
-                <p className="text-[10px] text-emerald-500 font-semibold">{otherUserTyping ? 'typing...' : 'active now'}</p>
+            <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-dark-800/40">
+              <div className="flex items-center">
+                {/* Back button for mobile */}
+                <button 
+                  type="button"
+                  onClick={() => setActiveChat(null)}
+                  className="mr-3 p-1.5 hover:bg-slate-200 dark:hover:bg-dark-850 rounded-full md:hidden text-slate-500 transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <p className="font-bold text-sm">{getRecipientUser(activeChat)?.fullName}</p>
+                  <p className="text-[10px] text-emerald-500 font-semibold">{otherUserTyping ? 'typing...' : 'active now'}</p>
+                </div>
               </div>
             </div>
 
@@ -362,6 +386,28 @@ const ChatWorkspace = () => {
             <p className="text-sm font-semibold">Select a conversation to begin real-time coordinates.</p>
           </div>
         )}
+      </div>
+
+      {/* Floating Bottom Nav for Mobile Devices */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-dark-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-850 py-2 px-6 flex justify-around md:hidden print:hidden">
+        {[
+          { id: 'dashboard', label: 'Home', icon: Activity, path: getDashboardLink() },
+          { id: 'requests', label: 'Feed', icon: Heart, path: getDashboardLink('requests') },
+          { id: 'rewards', label: 'Wallet', icon: Gift, path: getDashboardLink('rewards') },
+          { id: 'notifications', label: 'Alerts', icon: Bell, path: getDashboardLink('notifications') }
+        ].map((item) => {
+          const ItemIcon = item.icon;
+          return (
+            <Link
+              key={item.id}
+              to={item.path}
+              className="flex flex-col items-center gap-1 text-[10px] font-extrabold text-slate-400 dark:text-slate-500 hover:text-rose-500 transition-all hover:scale-110 active:scale-95"
+            >
+              <ItemIcon className="w-5.5 h-5.5" />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
       </div>
 
     </div>

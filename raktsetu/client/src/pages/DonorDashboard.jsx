@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { updateProfileSuccess, logout } from '../redux/authSlice';
 import { io } from 'socket.io-client';
 import { 
@@ -368,7 +368,16 @@ const DonorDashboard = () => {
   };
 
   // Dynamic customization state
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabParam || 'dashboard');
+
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
   const [lang, setLang] = useState('en');
   const [accent, setAccent] = useState('red');
   const [compact, setCompact] = useState(false);
@@ -3144,7 +3153,7 @@ const DonorDashboard = () => {
       </div>
 
       {/* Floating AI Healthcare Assistant Button */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3 print:hidden">
+      <div className="fixed bottom-20 md:fixed md:bottom-6 right-6 z-50 flex flex-col items-end gap-3 print:hidden">
         
         {/* Chatbot Window */}
         <AnimatePresence>
@@ -3238,10 +3247,13 @@ const DonorDashboard = () => {
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center gap-1.5 text-[10px] font-extrabold transition-all hover:scale-110 active:scale-95 ${isActive ? uiTheme.text : 'text-slate-400 dark:text-slate-500'}`}
+              onClick={() => {
+                setActiveTab(item.id);
+                setSearchParams({ tab: item.id });
+              }}
+              className={`flex flex-col items-center gap-1 text-[10px] font-extrabold transition-all hover:scale-110 active:scale-95 ${isActive ? uiTheme.text : 'text-slate-400 dark:text-slate-500'}`}
             >
-              <ItemIcon className="w-7 h-7" />
+              <ItemIcon className="w-5.5 h-5.5" />
               <span>{item.label}</span>
             </button>
           );
