@@ -656,7 +656,7 @@ const DonorDashboard = () => {
       }
     };
     if (user) fetchRequests();
-  }, [user]);
+  }, [user, activeTab]);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -1853,7 +1853,13 @@ const DonorDashboard = () => {
                           <p className="text-sm font-bold text-slate-500">No blood requests match your filters.</p>
                           <p className="text-xs">Try clearing filters to see all national requests, or check back later.</p>
                           <button
-                            onClick={() => { setBrowseBloodGroup(''); setBrowseState(''); setBrowseEmergencyOnly(false); }}
+                            onClick={() => {
+                              setBrowseBloodGroup('');
+                              setBrowseState('');
+                              setBrowseEmergencyOnly(false);
+                              setDeclinedRequests([]);
+                              localStorage.removeItem('declinedRequests');
+                            }}
                             className="mt-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl"
                           >
                             Clear Filters
