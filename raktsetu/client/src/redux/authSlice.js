@@ -1,9 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-const token = localStorage.getItem('token') || null;
+const rawToken = localStorage.getItem('token');
+const token = (rawToken && rawToken !== 'undefined' && rawToken !== 'null') ? rawToken : null;
 const userStr = localStorage.getItem('user');
 let user = null;
-if (userStr && userStr !== 'undefined') {
+if (userStr && userStr !== 'undefined' && userStr !== 'null') {
   try {
     user = JSON.parse(userStr);
   } catch (e) {

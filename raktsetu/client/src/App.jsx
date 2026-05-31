@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { io } from 'socket.io-client';
 import axios from 'axios';
+import { socket } from './utils/socket';
 import { logout } from './redux/authSlice';
 import { Activity, MessageSquare, LogOut, Heart, Menu, X, Sun, Moon, Bell } from 'lucide-react';
 import NotificationStack from './components/NotificationStack';
@@ -258,7 +258,6 @@ const AppShell = () => {
     () => typeof Notification !== 'undefined' && Notification.permission === 'granted'
   );
   const { isAuthenticated, user, token } = useSelector((state) => state.auth);
-  const socketRef = React.useRef(null);
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -267,11 +266,15 @@ const AppShell = () => {
       (response) => response,
       (error) => {
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-          if (!window.isSessionExpiredAlertShowing) {
-            window.isSessionExpiredAlertShowing = true;
-            alert(error.response.data?.message || 'Your session has expired. Please log in again.');
-            window.isSessionExpiredAlertShowing = false;
-            dispatch(logout());
+          const requestUrl = error.config?.url || '';
+          // Only intercept local backend API requests to prevent third-party 401/403 errors (e.g. from Nominatim/OSM) from logging the user out.
+          if (requestUrl.includes(API_URL) || requestUrl.startsWith('/api/')) {
+            if (!window.isSessionExpiredAlertShowing) {
+              window.isSessionExpiredAlertShowing = true;
+              alert(error.response.data?.message || 'Your session has expired. Please log in again.');
+              window.isSessionExpiredAlertShowing = false;
+              dispatch(logout());
+            }
           }
         }
         return Promise.reject(error);
@@ -336,12 +339,13 @@ const AppShell = () => {
   }, [isAuthenticated, user, triggerNotification]);
 
   useEffect(() => {
-    if (!isAuthenticated || !user?._id) return;
+    if (!isAuthenticated || !user?._id || !token) return;
 
-    socketRef.current = io(API_URL);
-    socketRef.current.emit('register', user._id);
+    socket.auth = { token };
+    socket.connect();
+    socket.emit('register', user._id);
 
-    socketRef.current.on('greeting', (data) => {
+    socket.on('greeting', (data) => {
       triggerNotification({
         id: Date.now(),
         title: data.title || 'Welcome',
@@ -350,7 +354,7 @@ const AppShell = () => {
       });
     });
 
-    socketRef.current.on('chat_notification', (data) => {
+    socket.on('chat_notification', (data) => {
       // Smart active-chat suppression
       const params = new URLSearchParams(window.location.search);
       const activeChatId = params.get('chatId');
@@ -369,7 +373,7 @@ const AppShell = () => {
       });
     });
 
-    socketRef.current.on('new_blood_request', (data) => {
+    socket.on('new_blood_request', (data) => {
       if (user?.role !== 'Donor') return;
       triggerNotification({
         id: Date.now(),
@@ -381,7 +385,7 @@ const AppShell = () => {
       });
     });
 
-    socketRef.current.on('request_accepted', (data) => {
+    socket.on('request_accepted', (data) => {
       if (user?.role !== 'Recipient') return;
       triggerNotification({
         id: Date.now(),
@@ -393,7 +397,7 @@ const AppShell = () => {
       });
     });
 
-    socketRef.current.on('admin_broadcast', (data) => {
+    socket.on('admin_broadcast', (data) => {
       triggerNotification({
         id: Date.now(),
         title: data.title || '📢 Admin Broadcast',
@@ -402,8 +406,15 @@ const AppShell = () => {
       });
     });
 
-    return () => socketRef.current?.disconnect();
-  }, [isAuthenticated, user?._id, user?.role, triggerNotification]);
+    return () => {
+      socket.off('greeting');
+      socket.off('chat_notification');
+      socket.off('new_blood_request');
+      socket.off('request_accepted');
+      socket.off('admin_broadcast');
+      socket.disconnect();
+    };
+  }, [isAuthenticated, user?._id, user?.role, token, triggerNotification]);
 
   // Keep track of notification IDs we have already toasted to avoid duplicates
   const shownNotificationIds = React.useRef(new Set());

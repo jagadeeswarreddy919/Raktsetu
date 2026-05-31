@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { updateProfileSuccess, logout } from '../redux/authSlice';
-import { io } from 'socket.io-client';
+import { socket } from '../utils/socket';
 import { 
   Heart, Activity, Award, Calendar, ToggleLeft, ToggleRight, Share2, 
   Clipboard, Download, Check, MessageSquare, Printer, X, ShieldAlert, 
@@ -387,7 +387,7 @@ const DonorDashboard = () => {
   const [availability, setAvailability] = useState(user?.availability ?? true);
   const [availabilityStatus, setAvailabilityStatus] = useState(user?.availabilityStatus || 'Available');
   const [smartMatchAlert, setSmartMatchAlert] = useState(null);
-  const socketRef = useRef(null);
+
   const [emergencyVolunteer, setEmergencyVolunteer] = useState(false);
   const [sosPanicActive, setSosPanicActive] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -691,14 +691,11 @@ const DonorDashboard = () => {
   useEffect(() => {
     if (!user || !user._id) return;
     
-    // Connect to WebSocket server
-    socketRef.current = io(API_URL);
-    
     // Register active user session
-    socketRef.current.emit('register', user._id);
+    socket.emit('register', user._id);
     
     // Listen for new emergency blood match alerts
-    socketRef.current.on('new_blood_request', (data) => {
+    socket.on('new_blood_request', (data) => {
       console.log('[WebSocket] Smart Blood Match Alert Received:', data);
       
       // Check current availability status
@@ -735,7 +732,7 @@ const DonorDashboard = () => {
       });
     });
 
-    socketRef.current.on('chat_notification', (data) => {
+    socket.on('chat_notification', (data) => {
       setLogs((prev) => [
         {
           id: Date.now(),
@@ -751,7 +748,7 @@ const DonorDashboard = () => {
       ]);
     });
 
-    socketRef.current.on('donation_verified', (data) => {
+    socket.on('donation_verified', (data) => {
       console.log('[WebSocket] Donation Verified:', data);
       alert(data.message || '🎉 Thank you! Your blood donation has been successfully verified.');
       setShowCertificateModal(true);
@@ -764,18 +761,19 @@ const DonorDashboard = () => {
       }).catch(err => console.error('[Profile Auto-Refresh Failed]', err));
     });
 
-    socketRef.current.on('request_accepted', (data) => {
+    socket.on('request_accepted', (data) => {
       console.log('[WebSocket] Request Accepted Alert Received:', data);
       alert(data.message || `🎉 Good news! Your blood request has been accepted by a volunteer.`);
       fetchMyRequests(); // Reload tickets
     });
     
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
+      socket.off('new_blood_request');
+      socket.off('chat_notification');
+      socket.off('donation_verified');
+      socket.off('request_accepted');
     };
-  }, [user]);
+  }, [user, token]);
 
   const [logs, setLogs] = useState([]);
 

@@ -13,7 +13,7 @@ import {
   firebaseGetCurrentUserToken 
 } from '../utils/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { io } from 'socket.io-client';
+import { socket } from '../utils/socket';
 import axios from 'axios';
 import { API_URL } from '../utils/api';
 import { STATES_DATA } from '../utils/statesData';
@@ -129,7 +129,7 @@ const RecipientDashboard = () => {
   const [activeTab, setActiveTab] = useState('requests');
 
   // Socket reference
-  const socketRef = useRef(null);
+
 
   // Floating Toast Alerts
   const [toastAlerts, setToastAlerts] = useState([]);
@@ -254,11 +254,11 @@ const RecipientDashboard = () => {
 
   // Socket initialization & notifications listener
   useEffect(() => {
-    socketRef.current = io(API_URL);
-    socketRef.current.emit('register', user?._id);
+    if (!user?._id) return;
+    socket.emit('register', user._id);
 
     // Live acceptance alert
-    socketRef.current.on('request_accepted', (data) => {
+    socket.on('request_accepted', (data) => {
       // Build WhatsApp click-to-chat link from donor phone number
       let waPhone = (data.donor.phone || '').trim().replace(/\s+/g, '');
       if (!waPhone.startsWith('+')) {
@@ -287,7 +287,7 @@ const RecipientDashboard = () => {
       }, 12000);
     });
 
-    socketRef.current.on('donation_verified', (data) => {
+    socket.on('donation_verified', (data) => {
       console.log('[WebSocket] Donation Verified:', data);
       alert(data.message || '🎉 Thank you! Your blood donation has been successfully verified.');
       setShowCertificateModal(true);
@@ -301,9 +301,10 @@ const RecipientDashboard = () => {
     });
 
     return () => {
-      if (socketRef.current) socketRef.current.disconnect();
+      socket.off('request_accepted');
+      socket.off('donation_verified');
     };
-  }, [user]);
+  }, [user, token]);
 
   // Initial fetches
   useEffect(() => {
@@ -573,16 +574,14 @@ const RecipientDashboard = () => {
     }
   };
   const sendMatchNotification = (donorId) => {
-    if (socketRef.current) {
-      socketRef.current.emit('emergency_broadcast', {
-        request: { patientName: user.fullName, bloodGroup: filterBloodGroup, city: filterCity },
-        state: filterState,
-        district: filterDistrict,
-        city: filterCity,
-        message: `🚨 Recipient ${user.fullName} is requesting O+ blood nearby! Please respond.`
-      });
-      alert('Smart match push alert sent to donor! They will be notified in real-time.');
-    }
+    socket.emit('emergency_broadcast', {
+      request: { patientName: user.fullName, bloodGroup: filterBloodGroup, city: filterCity },
+      state: filterState,
+      district: filterDistrict,
+      city: filterCity,
+      message: `🚨 Recipient ${user.fullName} is requesting O+ blood nearby! Please respond.`
+    });
+    alert('Smart match push alert sent to donor! They will be notified in real-time.');
   };
 
   const filteredBanks = bankState 

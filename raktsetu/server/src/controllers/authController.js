@@ -193,24 +193,31 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log("[LOGIN] Attempt for email:", email);
 
     const user = await User.findOne({ email });
     if (!user) {
+      console.log("[LOGIN] User not found for email:", email);
       return res.status(400).json({ message: 'Invalid credentials. User not found.' });
     }
+    console.log("[LOGIN] User found:", user.email);
 
     if (user.status === 'Suspended') {
+      console.log("[LOGIN] Suspended login block for:", email);
       return res.status(403).json({ message: 'Your account has been suspended. Contact support.' });
     }
 
     if (!password || !user.password) {
+      console.log("[LOGIN] Missing password / federated check for:", email);
       return res.status(400).json({ message: 'Invalid credentials. This account may be using a federated login (Google/Supabase/Firebase) or is missing a password.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log("[LOGIN] Password mismatch for:", email);
       return res.status(400).json({ message: 'Invalid credentials. Password mismatch.' });
     }
+    console.log("[LOGIN] Password verified successfully");
 
     // Audit logs
     await AuditLog.create({
@@ -222,15 +229,18 @@ exports.login = async (req, res) => {
     });
 
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    console.log("[LOGIN] JWT generated successfully");
 
     const greetingMsg = buildGreetingMessage(user.fullName);
     try {
+      console.log("[LOGIN] Creating database greeting notification");
       await Notification.create({
         recipient: user._id,
         type: 'greeting',
         message: greetingMsg,
         requestStatus: 'None'
       });
+      console.log("[LOGIN] Sending socket greeting notifyUser()");
       notifyUser(user._id, 'greeting', {
         title: `${getTimeBasedGreeting()}!`,
         message: greetingMsg,

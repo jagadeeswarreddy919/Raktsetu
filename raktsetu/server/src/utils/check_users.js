@@ -12,7 +12,7 @@ async function checkUsers() {
     const users = await User.find({});
     console.log(`Found ${users.length} users in the database:`);
     users.forEach(u => {
-      console.log(`- Name: ${u.fullName}, Email: ${u.email}, Phone: ${u.phone}, Role: ${u.role}, Status: ${u.status}`);
+      console.log(`- ID: ${u._id}, Name: ${u.fullName}, Email: ${u.email}, Phone: ${u.phone}, Role: ${u.role}, Status: ${u.status}`);
     });
 
     mongoose.disconnect();

@@ -1,4 +1,6 @@
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'raktsetu-super-secret-jwt-key';
 
 // In-memory mapping of active user IDs to their socket IDs
 const onlineUsers = new Map();
@@ -13,12 +15,35 @@ const initSockets = (server) => {
   });
   ioInstance = io;
 
+  // Verify JWT token during handshake
+  io.use((socket, next) => {
+    try {
+      const token = socket.handshake.auth?.token;
+      if (token) {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        socket.userId = decoded.id;
+        console.log(`[Socket Auth] Socket ${socket.id} authenticated for user ${decoded.id}`);
+      }
+      next();
+    } catch (err) {
+      console.warn(`[Socket Auth Warning] Handshake token verification failed: ${err.message}`);
+      next();
+    }
+  });
+
   io.on('connection', (socket) => {
     console.log(`[Socket] User connected: ${socket.id}`);
 
     // Register user session
     socket.on('register', (userId) => {
       if (userId) {
+        // Prevent duplicate socket registration
+        const oldSocketId = onlineUsers.get(userId);
+        if (oldSocketId && oldSocketId !== socket.id) {
+          console.log(`[Socket] Evicting duplicate socket ${oldSocketId} for user ${userId}`);
+          io.sockets.sockets.get(oldSocketId)?.disconnect(true);
+        }
+
         onlineUsers.set(userId, socket.id);
         socket.userId = userId;
         console.log(`[Socket] Registered user ${userId} to socket ${socket.id}`);
@@ -57,11 +82,14 @@ const initSockets = (server) => {
       io.emit('emergency_alert', alertData);
     });
 
-    socket.on('disconnect', () => {
-      console.log(`[Socket] User disconnected: ${socket.id}`);
+    socket.on('disconnect', (reason) => {
+      console.log(`[Socket] User disconnected: ${socket.id}, reason: ${reason}`);
       if (socket.userId) {
-        onlineUsers.delete(socket.userId);
-        io.emit('user_status', { userId: socket.userId, status: 'offline' });
+        const currentSocketId = onlineUsers.get(socket.userId);
+        if (currentSocketId === socket.id) {
+          onlineUsers.delete(socket.userId);
+          io.emit('user_status', { userId: socket.userId, status: 'offline' });
+        }
       }
     });
   });
@@ -74,9 +102,12 @@ const getSocketId = (userId) => onlineUsers.get(userId);
 const notifyUser = (userId, eventName, data) => {
   if (ioInstance && userId) {
     const socketId = getSocketId(userId.toString());
+    console.log(`[Socket Notify] Sending event '${eventName}' to user ${userId} on socket ${socketId}`);
     if (socketId) {
       ioInstance.to(socketId).emit(eventName, data);
       return true;
+    } else {
+      console.log(`[Socket Notify] User ${userId} is offline`);
     }
   }
   return false;
@@ -87,8 +118,11 @@ const broadcastToUsers = (userIds, eventName, data) => {
     userIds.forEach((userId) => {
       if (userId) {
         const socketId = getSocketId(userId.toString());
+        console.log(`[Socket Broadcast] Sending event '${eventName}' to user ${userId} on socket ${socketId}`);
         if (socketId) {
           ioInstance.to(socketId).emit(eventName, data);
+        } else {
+          console.log(`[Socket Broadcast] User ${userId} is offline`);
         }
       }
     });

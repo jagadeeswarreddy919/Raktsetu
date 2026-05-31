@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useSearchParams, Link } from 'react-router-dom';
-import { io } from 'socket.io-client';
+import { socket } from '../utils/socket';
 import { MessageSquare, Send, Smile, Paperclip, CheckCheck, Loader2, ArrowLeft, Activity, Heart, Gift, Bell } from 'lucide-react';
 import axios from 'axios';
 import { API_URL } from '../utils/api';
@@ -18,18 +18,18 @@ const ChatWorkspace = () => {
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const [onlineStatus, setOnlineStatus] = useState({});
 
-  const socketRef = useRef(null);
+
   const messageEndRef = useRef(null);
 
   // Initialize Socket.IO connection
   useEffect(() => {
-    socketRef.current = io(API_URL);
+    if (!user?._id) return;
 
     // Register session
-    socketRef.current.emit('register', user?._id);
+    socket.emit('register', user._id);
 
     // Socket events
-    socketRef.current.on('new_message', (message) => {
+    socket.on('new_message', (message) => {
       if (activeChat && message.chat.toString() === activeChat._id.toString()) {
         setMessages((prev) => [...prev, message]);
       }
@@ -37,31 +37,35 @@ const ChatWorkspace = () => {
       fetchChats();
     });
 
-    socketRef.current.on('typing', ({ chatId, userId }) => {
+    socket.on('typing', ({ chatId, userId }) => {
       if (activeChat && chatId === activeChat._id && userId !== user._id) {
         setOtherUserTyping(true);
       }
     });
 
-    socketRef.current.on('stop_typing', ({ chatId, userId }) => {
+    socket.on('stop_typing', ({ chatId, userId }) => {
       if (activeChat && chatId === activeChat._id && userId !== user._id) {
         setOtherUserTyping(false);
       }
     });
 
-    socketRef.current.on('user_status', ({ userId, status }) => {
+    socket.on('user_status', ({ userId, status }) => {
       setOnlineStatus((prev) => ({
         ...prev,
         [userId]: status === 'online'
       }));
     });
 
-    socketRef.current.on('chat_notification', () => {
+    socket.on('chat_notification', () => {
       fetchChats();
     });
 
     return () => {
-      socketRef.current.disconnect();
+      socket.off('new_message');
+      socket.off('typing');
+      socket.off('stop_typing');
+      socket.off('user_status');
+      socket.off('chat_notification');
     };
   }, [activeChat, user]);
 
@@ -137,7 +141,7 @@ const ChatWorkspace = () => {
         setMessages(res.data);
         
         // Let sockets know we joined this room
-        socketRef.current.emit('join_chat', activeChat._id);
+        socket.emit('join_chat', activeChat._id);
         setOtherUserTyping(false);
       } catch (err) {
         console.error(err);
@@ -170,11 +174,11 @@ const ChatWorkspace = () => {
       setInputText('');
 
       // Stop typing
-      socketRef.current.emit('stop_typing', { chatId: activeChat._id, userId: user._id });
+      socket.emit('stop_typing', { chatId: activeChat._id, userId: user._id });
       setTypingStatus(false);
 
       // Relay via Socket IO to recipients
-      socketRef.current.emit('send_message', res.data);
+      socket.emit('send_message', res.data);
       fetchChats();
     } catch (err) {
       console.error(err);
@@ -186,13 +190,13 @@ const ChatWorkspace = () => {
     
     if (!typingStatus && activeChat) {
       setTypingStatus(true);
-      socketRef.current.emit('typing', { chatId: activeChat._id, userId: user._id });
+      socket.emit('typing', { chatId: activeChat._id, userId: user._id });
     }
 
     // Reset typing status after delay of inactivity
     const timeout = setTimeout(() => {
       if (typingStatus && activeChat) {
-        socketRef.current.emit('stop_typing', { chatId: activeChat._id, userId: user._id });
+        socket.emit('stop_typing', { chatId: activeChat._id, userId: user._id });
         setTypingStatus(false);
       }
     }, 3000);

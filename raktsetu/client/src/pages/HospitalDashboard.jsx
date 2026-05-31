@@ -11,7 +11,7 @@ import {
   firebaseSendEmailVerification, 
   firebaseGetCurrentUserToken 
 } from '../utils/firebase';
-import { io } from 'socket.io-client';
+import { socket } from '../utils/socket';
 import axios from 'axios';
 import { API_URL } from '../utils/api';
 import { STATES_DATA } from '../utils/statesData';
@@ -56,7 +56,7 @@ const HospitalDashboard = () => {
   const { user, token } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const socketRef = useRef(null);
+
 
   const [syncingEmail, setSyncingEmail] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
@@ -239,17 +239,16 @@ const HospitalDashboard = () => {
   // Socket initialization
   useEffect(() => {
     if (user) {
-      socketRef.current = io(API_URL);
-      socketRef.current.emit('register', user._id);
+      socket.emit('register', user._id);
 
-      socketRef.current.on('request_accepted', (data) => {
+      socket.on('request_accepted', (data) => {
         // If the request belongs to this hospital, auto refresh
         if (data.request?.requester === user._id || data.request?.requester?._id === user._id) {
           fetchMyRequests();
         }
       });
 
-      socketRef.current.on('donation_verified', (data) => {
+      socket.on('donation_verified', (data) => {
         console.log('[WebSocket] Donation Verified:', data);
         alert(data.message || '🎉 Thank you! Your blood donation has been successfully verified.');
         setShowCertificateModal(true);
@@ -264,9 +263,10 @@ const HospitalDashboard = () => {
     }
 
     return () => {
-      if (socketRef.current) socketRef.current.disconnect();
+      socket.off('request_accepted');
+      socket.off('donation_verified');
     };
-  }, [user]);
+  }, [user, token]);
 
   useEffect(() => {
     if (user) {
