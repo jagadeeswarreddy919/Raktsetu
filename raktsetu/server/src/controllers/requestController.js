@@ -670,7 +670,8 @@ exports.searchDonors = async (req, res) => {
     // Call Python AI microservice for extra scoring & ranking if available
     if (state && district && city && bloodGroup && donors.length > 0) {
       try {
-        const response = await fetch('http://localhost:8000/api/ai/rank-donors', {
+        const aiEngineUrl = process.env.AI_ENGINE_URL || 'http://127.0.0.1:8000';
+        const response = await fetch(`${aiEngineUrl}/api/ai/rank-donors`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

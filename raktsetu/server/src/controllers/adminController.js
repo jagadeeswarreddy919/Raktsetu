@@ -202,7 +202,8 @@ exports.predictShortage = async (req, res) => {
     const pincodeFactor = 0.65;
 
     try {
-      const response = await fetch('http://localhost:8000/api/ai/predict-shortage', {
+      const aiEngineUrl = process.env.AI_ENGINE_URL || 'http://127.0.0.1:8000';
+      const response = await fetch(`${aiEngineUrl}/api/ai/predict-shortage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
