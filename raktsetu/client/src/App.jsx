@@ -421,6 +421,7 @@ const AppShell = () => {
   useEffect(() => {
     if (!isAuthenticated || !token) {
       shownNotificationIds.current.clear();
+      setNotifications([]);
       return;
     }
 
