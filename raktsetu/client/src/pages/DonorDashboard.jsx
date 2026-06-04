@@ -784,7 +784,13 @@ const DonorDashboard = () => {
         const res = await axios.get(`${API_URL}/api/notifications`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const mapped = (res.data || []).map((n) => ({
+        const filtered = (res.data || []).filter(n => {
+          if (n.type === 'greeting' && n.message && (n.message.includes('Welcome') || n.message.includes('welcome') || n.message.includes('Welcome back'))) {
+            return false;
+          }
+          return true;
+        });
+        const mapped = filtered.map((n) => ({
           id: n._id,
           type: n.type === 'chat_message' ? 'chat' : n.type === 'greeting' ? 'greeting' : 'emergency',
           title: n.type === 'greeting' ? '👋 Welcome' : n.type === 'chat_message' ? '💬 Chat' : '🩸 Blood Alert',

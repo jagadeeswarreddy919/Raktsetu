@@ -447,6 +447,9 @@ const AppShell = () => {
               type = 'warning';
               title = n.bloodRequest?.emergencyMode ? '🚨 Emergency Blood Request' : '🩸 Blood Request';
             } else if (n.type === 'greeting') {
+              if (n.message && (n.message.includes('Welcome') || n.message.includes('welcome') || n.message.includes('Welcome back'))) {
+                return;
+              }
               type = 'success';
               title = '👋 Welcome';
             }

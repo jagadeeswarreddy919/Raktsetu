@@ -140,20 +140,7 @@ exports.register = async (req, res) => {
       const greetingSubject = 'Welcome to RaktSetu!';
       const greetingMsg = `Hi ${newUser.fullName}, welcome to RaktSetu! Thank you for joining as a ${newUser.role}. Your welcome reward of 50 points has been credited. Together, we bridge lives through blood coordinates.`;
       
-      // 1. Create DB notification
-      await Notification.create({
-        recipient: newUser._id,
-        type: 'greeting',
-        message: greetingMsg,
-        requestStatus: 'None'
-      });
-      
-      // 2. Trigger real-time Socket push if connected
-      notifyUser(newUser._id, 'greeting', {
-        title: 'Welcome to RaktSetu!',
-        message: greetingMsg,
-        type: 'greeting'
-      });
+      // 1. DB and socket welcome greeting notifications bypassed (registration only, email and SMS retained)
       
       // 3. Send SMS greeting
       await sendSMS({
@@ -548,20 +535,7 @@ exports.firebaseRegister = async (req, res) => {
       const greetingSubject = 'Welcome to RaktSetu!';
       const greetingMsg = `Hi ${newUser.fullName}, welcome to RaktSetu! Thank you for joining as a ${newUser.role}. Your welcome reward of 50 points has been credited. Together, we bridge lives through blood coordinates.`;
       
-      // 1. Create DB notification
-      await Notification.create({
-        recipient: newUser._id,
-        type: 'greeting',
-        message: greetingMsg,
-        requestStatus: 'None'
-      });
-      
-      // 2. Trigger real-time Socket push if connected
-      notifyUser(newUser._id, 'greeting', {
-        title: 'Welcome to RaktSetu!',
-        message: greetingMsg,
-        type: 'greeting'
-      });
+      // 1. DB and socket welcome greeting notifications bypassed (registration only, email and SMS retained)
 
       // 3. Send SMS greeting
       await sendSMS({
@@ -798,18 +772,7 @@ exports.supabaseRegister = async (req, res) => {
       const greetingSubject = 'Welcome to RaktSetu!';
       const greetingMsg = `Hi ${newUser.fullName}, welcome to RaktSetu! Thank you for joining as a ${newUser.role}. Your welcome reward of 50 points has been credited. Together, we bridge lives through blood coordinates.`;
       
-      await Notification.create({
-        recipient: newUser._id,
-        type: 'greeting',
-        message: greetingMsg,
-        requestStatus: 'None'
-      });
-      
-      notifyUser(newUser._id, 'greeting', {
-        title: 'Welcome to RaktSetu!',
-        message: greetingMsg,
-        type: 'greeting'
-      });
+      // DB and socket welcome greeting notifications bypassed (registration only, email and SMS retained)
 
       await sendSMS({
         to: newUser.phone,
