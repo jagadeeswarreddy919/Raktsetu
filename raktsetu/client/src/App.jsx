@@ -7,7 +7,6 @@ import { logout } from './redux/authSlice';
 import { Activity, MessageSquare, LogOut, Heart, Menu, X, Sun, Moon, Bell } from 'lucide-react';
 import NotificationStack from './components/NotificationStack';
 import { usePushNotifications } from './hooks/usePushNotifications';
-import { buildGreetingMessage } from './utils/greeting';
 import { requestFcmToken, saveFcmTokenToServer } from './utils/firebase';
 import { playNotificationSound } from './utils/sound';
 import { API_URL } from './utils/api';
@@ -317,26 +316,6 @@ const AppShell = () => {
     }
   };
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      const sessionGreeted = sessionStorage.getItem('has_greeted_session');
-      if (!sessionGreeted) {
-        const greeting = buildGreetingMessage(user.fullName);
-        const timer = setTimeout(() => {
-          triggerNotification({
-            id: 'login-greeting',
-            title: greeting.split(',')[0],
-            message: greeting,
-            type: 'success'
-          });
-          sessionStorage.setItem('has_greeted_session', 'true');
-        }, 2000);
-        return () => clearTimeout(timer);
-      }
-    } else if (!isAuthenticated) {
-      sessionStorage.removeItem('has_greeted_session');
-    }
-  }, [isAuthenticated, user, triggerNotification]);
 
   useEffect(() => {
     if (!isAuthenticated || !user?._id || !token) {
