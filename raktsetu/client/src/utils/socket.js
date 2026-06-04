@@ -6,7 +6,7 @@ import { API_URL } from "./api";
 // preventing continuous connect/disconnect loops on local network IPs.
 export const socket = io(API_URL, {
   autoConnect: false,
-  transports: ['websocket', 'polling'],
+  transports: ['polling', 'websocket'],
   upgrade: true,
   rememberUpgrade: true,
   reconnection: true,
