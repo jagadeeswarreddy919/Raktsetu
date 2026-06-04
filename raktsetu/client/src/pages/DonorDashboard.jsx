@@ -785,8 +785,11 @@ const DonorDashboard = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         const filtered = (res.data || []).filter(n => {
-          if (n.type === 'greeting' && n.message && (n.message.includes('Welcome') || n.message.includes('welcome') || n.message.includes('Welcome back'))) {
-            return false;
+          if (n.type === 'greeting') {
+            const msg = n.message || '';
+            if (!msg.startsWith('📢') && !msg.startsWith('🎉')) {
+              return false; // Ignore welcome/onboarding greeting wishes
+            }
           }
           return true;
         });

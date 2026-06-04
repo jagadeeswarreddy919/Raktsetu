@@ -447,8 +447,9 @@ const AppShell = () => {
               type = 'warning';
               title = n.bloodRequest?.emergencyMode ? '🚨 Emergency Blood Request' : '🩸 Blood Request';
             } else if (n.type === 'greeting') {
-              if (n.message && (n.message.includes('Welcome') || n.message.includes('welcome') || n.message.includes('Welcome back'))) {
-                return;
+              const msg = n.message || '';
+              if (!msg.startsWith('📢') && !msg.startsWith('🎉')) {
+                return; // Ignore welcome/onboarding greeting wishes
               }
               type = 'success';
               title = '👋 Welcome';
