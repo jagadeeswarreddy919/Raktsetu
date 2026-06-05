@@ -374,7 +374,7 @@ const LandingPage = () => {
             </motion.div>
           </div>
           <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-white leading-none">
-            RAKT<span className="text-rose-600 dark:text-rose-500">SETU</span>
+            ONE<span className="text-rose-600 dark:text-rose-500">DROP</span>
           </h1>
           <p className="text-base uppercase tracking-widest font-extrabold text-slate-500 dark:text-slate-400">
             Connecting Lives Through Blood Donation
@@ -1322,7 +1322,7 @@ const LandingPage = () => {
               <svg className="w-8 h-8 text-rose-600 dark:text-rose-500 fill-current" viewBox="0 0 100 50">
                 <path d="M 30,10 C 15,10 5,20 5,30 C 5,42 20,48 30,48 C 45,48 50,30 55,20 C 60,10 75,5 85,15 C 95,25 95,40 85,45 C 75,50 65,42 60,35 C 55,27 45,10 30,10 Z" />
               </svg>
-              <span className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">Rakt<span className="text-rose-600">setu</span></span>
+              <span className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">One<span className="text-rose-600">drop</span></span>
             </div>
             <p className="text-xs font-medium leading-relaxed">
               Connecting lives through real-time, peer-to-peer blood donation networks. Utilizing smart proximity location matching to prevent regional shortages across India.

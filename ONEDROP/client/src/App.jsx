@@ -114,7 +114,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-2">
             <ONEDROPLogo />
             <Link to="/" className="text-2xl font-black tracking-tight text-slate-900 dark:text-white font-sans">
-              RAKT<span className="text-primary-500">SETU</span>
+              ONE<span className="text-primary-500">DROP</span>
             </Link>
           </div>
 

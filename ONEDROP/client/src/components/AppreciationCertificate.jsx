@@ -11,7 +11,7 @@ function buildDonorId(user) {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const yy = String(d.getFullYear()).slice(2);
   const suffix = (user?._id?.slice(-2) || '01').toUpperCase();
-  return `RAKT${dd}${mm}${yy}${suffix}`;
+  return `ONEDROP${dd}${mm}${yy}${suffix}`;
 }
 
 function donationsCount(user) {
