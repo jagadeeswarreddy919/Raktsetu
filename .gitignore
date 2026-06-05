@@ -39,7 +39,7 @@
 **/serviceAccountKey.json
 
 # Local Portable Tools
-**/raktsetu/tools/
+**/onedrop/tools/
 *.zip
 
 # OS / Editor specific

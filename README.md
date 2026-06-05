@@ -1,6 +1,6 @@
-# 🩸 RAKTSETU - Connecting Lives through Smart Blood Donation
+# 🩸 ONEDROP - Connecting Lives through Smart Blood Donation
 
-**RaktSetu** is a premium, state-of-the-art Web & AI-powered integrated platform designed to bridge blood donors, recipients, hospitals, and administrative bodies. Featuring real-time regional matching, push notification alerts, automated WhatsApp OTP recovery, predictive AI analytics, and a interactive dashboard interface.
+**ONEDROP** is a premium, state-of-the-art Web & AI-powered integrated platform designed to bridge blood donors, recipients, hospitals, and administrative bodies. Featuring real-time regional matching, push notification alerts, automated WhatsApp OTP recovery, predictive AI analytics, and a interactive dashboard interface.
 
 ---
 
@@ -62,9 +62,9 @@ Ensure you have the following installed on your machine:
 
 We have built a custom system control dashboard to verify dependencies and start service containers in single window commands.
 
-1. Double-click the **`run_raktsetu.bat`** file in the root directory, or open a PowerShell window and execute:
+1. Double-click the **`run_onedrop.bat`** file in the root directory, or open a PowerShell window and execute:
    ```powershell
-   ./run_raktsetu.ps1
+   ./run_onedrop.ps1
    ```
 2. Follow the terminal prompt to choose your mode:
    - **[1] Launch Core App**: Spawns Node Server and React Client.
@@ -76,7 +76,7 @@ We have built a custom system control dashboard to verify dependencies and start
 ## 📁 Repository Structure
 
 ```text
-raktsetu/
+onedrop/
 ├── client/              # React (Vite) frontend application
 ├── server/              # Express.js REST API server & Socket.IO config
 ├── ml-service/          # Python AI/ML predictive analytics
@@ -89,4 +89,4 @@ raktsetu/
 
 ## 🤝 Contributing
 
-Contributions to **RaktSetu** are always welcome! Feel free to open issues or submit pull requests.
+Contributions to **ONEDROP** are always welcome! Feel free to open issues or submit pull requests.

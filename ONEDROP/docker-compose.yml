@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  database:
+    image: mongo:latest
+    container_name: onedrop_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build: ./server
+    container_name: onedrop_backend
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://database:27017/onedrop
+      - PORT=5000
+      - JWT_SECRET=onedrop-super-secret-jwt-key
+    depends_on:
+      - database
+
+  frontend:
+    build: ./client
+    container_name: onedrop_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  ml-service:
+    build: ./ml-service
+    container_name: onedrop_ml
+    ports:
+      - "8000:8000"
+
+  analytics-service:
+    build: ./analytics-service
+    container_name: onedrop_analytics
+    ports:
+      - "8080:8080"
+
+volumes:
+  mongo_data:

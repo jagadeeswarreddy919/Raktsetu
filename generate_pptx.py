@@ -41,7 +41,7 @@ def create_presentation():
         fill.solid()
         fill.fore_color.rgb = BG_COLOR
         
-    def add_header(slide, title_text, category_text="RAKTSETU PLATFORM"):
+    def add_header(slide, title_text, category_text="ONEDROP PLATFORM"):
         # Category tag
         cat_box = slide.shapes.add_textbox(Inches(0.8), Inches(0.4), Inches(11.733), Inches(0.3))
         cat_tf = cat_box.text_frame
@@ -88,7 +88,7 @@ def create_presentation():
     
     p_main = tf1.paragraphs[0]
     r_main = p_main.add_run()
-    r_main.text = "RAKTSETU"
+    r_main.text = "ONEDROP"
     r_main.font.name = "Arial"
     r_main.font.size = Pt(64)
     r_main.font.bold = True
@@ -207,11 +207,11 @@ def create_presentation():
         rd.font.color.rgb = TEXT_MUTED
         
     # ----------------------------------------------------
-    # SLIDE 3: The RaktSetu Solution (Core Value Props)
+    # SLIDE 3: The ONEDROP Solution (Core Value Props)
     # ----------------------------------------------------
     slide3 = prs.slides.add_slide(blank_layout)
     apply_slide_bg(slide3)
-    add_header(slide3, "RaktSetu: The Intelligent Blood Bridge", "THE CORE SOLUTION")
+    add_header(slide3, "ONEDROP: The Intelligent Blood Bridge", "THE CORE SOLUTION")
     
     # 4 Column Grid of Solutions
     sols = [
@@ -714,7 +714,7 @@ def create_presentation():
         rd.font.color.rgb = TEXT_MUTED
 
     # Save to file
-    output_filename = "RaktSetu_Presentation.pptx"
+    output_filename = "ONEDROP_Presentation.pptx"
     prs.save(output_filename)
     print(f"Presentation saved successfully as '{output_filename}'!")
 
