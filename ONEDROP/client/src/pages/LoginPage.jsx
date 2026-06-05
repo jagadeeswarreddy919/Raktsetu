@@ -164,11 +164,15 @@ const LoginPage = () => {
         console.warn('[FCM Login Registration] Skipped or failed:', fcmErr.message);
       }
 
-      if (typeof window !== 'undefined' && 'Notification' in window && response.data.greeting && Notification.permission === 'granted') {
-        new Notification('ONEDROP', {
-          body: response.data.greeting || buildGreetingMessage(response.data.user?.fullName),
-          icon: '/logo.png'
-        });
+      try {
+        if (typeof window !== 'undefined' && 'Notification' in window && response.data.greeting && Notification.permission === 'granted') {
+          new Notification('ONEDROP', {
+            body: response.data.greeting || buildGreetingMessage(response.data.user?.fullName),
+            icon: '/logo.png'
+          });
+        }
+      } catch (notifErr) {
+        console.warn('[Notification Display] Failed to show browser notification:', notifErr.message);
       }
     } catch (err) {
       console.error(err);

@@ -36,30 +36,34 @@ export const usePushNotifications = (onNotification) => {
         requestId: data.requestId
       });
 
-      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted' && document.hidden) {
-        const localNotif = new Notification(title, { 
-          body: message, 
-          icon: '/logo.png', 
-          tag: data.type || 'onedrop',
-          data: data
-        });
+      try {
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted' && document.hidden) {
+          const localNotif = new Notification(title, { 
+            body: message, 
+            icon: '/logo.png', 
+            tag: data.type || 'onedrop',
+            data: data
+          });
 
-        localNotif.onclick = (e) => {
-          e.preventDefault();
-          window.focus();
-          let targetUrl = '/';
-          if (data.type === 'chat_message' && data.chatId) {
-            targetUrl = `/chat?chatId=${data.chatId}`;
-          } else if (data.type === 'new_request' || data.type === 'emergency_request') {
-            targetUrl = '/donor';
-          } else if (data.type === 'request_accepted') {
-            targetUrl = '/recipient';
-          } else if (data.chatPartnerId) {
-            targetUrl = `/chat?partnerId=${data.chatPartnerId}`;
-          }
-          window.location.href = targetUrl;
-          localNotif.close();
-        };
+          localNotif.onclick = (e) => {
+            e.preventDefault();
+            window.focus();
+            let targetUrl = '/';
+            if (data.type === 'chat_message' && data.chatId) {
+              targetUrl = `/chat?chatId=${data.chatId}`;
+            } else if (data.type === 'new_request' || data.type === 'emergency_request') {
+              targetUrl = '/donor';
+            } else if (data.type === 'request_accepted') {
+              targetUrl = '/recipient';
+            } else if (data.chatPartnerId) {
+              targetUrl = `/chat?partnerId=${data.chatPartnerId}`;
+            }
+            window.location.href = targetUrl;
+            localNotif.close();
+          };
+        }
+      } catch (notifErr) {
+        console.warn('[Local Notification] Failed to display background notification:', notifErr.message);
       }
     }).then((unsub) => {
       unsubscribe = unsub || (() => {});
