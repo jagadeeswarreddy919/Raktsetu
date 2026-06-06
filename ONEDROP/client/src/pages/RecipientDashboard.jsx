@@ -737,6 +737,32 @@ const RecipientDashboard = () => {
       {/* Main Container Layout */}
       <div className={`flex-grow md:pl-20 ${sidebarOpen ? 'md:pl-64' : 'md:pl-20'} pb-24 md:pb-10 pt-10`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 relative">
+
+          {/* Mobile Tab Scroll Selector (Slide Bar) */}
+          <div className="md:hidden flex overflow-x-auto whitespace-nowrap scrollbar-none gap-2 pb-2 pt-1">
+            {[
+              { id: 'requests', label: 'Requests & Pledges', icon: FileText },
+              { id: 'smartMatch', label: 'Smart Match Finder', icon: Sparkles },
+              { id: 'bloodbanks', label: 'Blood Banks', icon: Compass }
+            ].map((item) => {
+              const IconComp = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
+                    isActive 
+                      ? 'bg-primary-600 border-primary-600 text-white shadow-md' 
+                      : 'bg-white dark:bg-dark-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  <IconComp className="w-4 h-4 flex-shrink-0" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
       
       {/* Floating Notifications Toasts */}
       <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-3 w-full max-w-md pointer-events-none">

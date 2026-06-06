@@ -667,11 +667,33 @@ const AdminDashboard = () => {
         </button>
       </div>
 
+      {/* Mobile Tab Scroll Selector (Slide Bar) */}
+      <div className="lg:hidden flex overflow-x-auto whitespace-nowrap scrollbar-none gap-2 pb-2 mt-6">
+        {menuTiers.flatMap(tier => tier.items).map((item) => {
+          const IconComp = item.icon;
+          const isActive = activePanel === item.name;
+          return (
+            <button
+              key={item.name}
+              onClick={() => setActivePanel(item.name)}
+              className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
+                isActive 
+                  ? 'bg-rose-600 border-rose-600 text-white shadow-md' 
+                  : 'bg-white dark:bg-dark-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'
+              }`}
+            >
+              <IconComp className="w-4 h-4 flex-shrink-0" />
+              <span>{item.name}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Main Grid Structure */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-10">
         
         {/* Navigation Sidebar Panel */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className="hidden lg:block lg:col-span-1 space-y-6">
           {menuTiers.map((tier, tIdx) => (
             <div key={tIdx} className="bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-3">
               <h4 className="text-[10px] font-black tracking-widest text-slate-400 uppercase border-b pb-2 dark:border-slate-800">{tier.title}</h4>

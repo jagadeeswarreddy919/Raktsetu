@@ -1471,6 +1471,41 @@ const DonorDashboard = () => {
       <div className={`flex-grow md:pl-20 ${sidebarOpen ? 'md:pl-64' : 'md:pl-20'} pb-24 md:pb-10 pt-10`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
+          {/* Mobile Tab Scroll Selector (Slide Bar) */}
+          <div className="md:hidden flex overflow-x-auto whitespace-nowrap scrollbar-none gap-2 pb-2 pt-1">
+            {[
+              { id: 'dashboard', label: 'Dashboard', icon: Activity },
+              { id: 'requests', label: 'Blood Requests', icon: Heart },
+              { id: 'smartMatch', label: 'Smart Match Finder', icon: Sparkles },
+              { id: 'donations', label: 'Donations', icon: Calendar },
+              { id: 'rewards', label: 'Rewards', icon: Gift },
+              { id: 'referrals', label: 'Referrals', icon: Share2 },
+              { id: 'analytics', label: 'Analytics', icon: TrendingUp },
+              { id: 'community', label: 'Community', icon: Users },
+              { id: 'campaigns', label: 'Campaigns', icon: BookOpen },
+              { id: 'notifications', label: 'Notifications', icon: Bell },
+              { id: 'bloodbanks', label: 'Blood Banks', icon: Compass },
+              { id: 'settings', label: 'Settings', icon: Settings }
+            ].map((item) => {
+              const IconComp = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
+                    isActive 
+                      ? 'bg-rose-600 border-rose-600 text-white shadow-md' 
+                      : 'bg-white dark:bg-dark-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  <IconComp className="w-4 h-4 flex-shrink-0" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* Glassmorphic Email Verification Banner */}
           {isUnverified && (
             <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 backdrop-blur-lg border border-amber-500/30 rounded-3xl p-6 shadow-xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 animate-fade-in">

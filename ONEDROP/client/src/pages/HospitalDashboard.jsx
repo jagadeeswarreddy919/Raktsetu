@@ -642,37 +642,37 @@ const HospitalDashboard = () => {
         </div>
       </div>
 
-      {/* Premium Glassmorphic Tab Selector */}
-      <div className="flex p-1 bg-slate-100 dark:bg-dark-800/80 rounded-2xl shadow-inner border border-slate-200/50 dark:border-slate-800/80 max-w-2xl">
+      {/* Premium Glassmorphic Tab Selector (Scrollable Slide Bar on Mobile) */}
+      <div className="flex overflow-x-auto whitespace-nowrap scrollbar-none p-1 bg-slate-100 dark:bg-dark-800/80 rounded-2xl shadow-inner border border-slate-200/50 dark:border-slate-800/80 max-w-2xl gap-1">
         <button
           onClick={() => setActiveTab('operations')}
-          className={`flex-grow py-3 px-4 text-center text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 ${
+          className={`flex-grow flex-shrink-0 py-3 px-4 text-center text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 ${
             activeTab === 'operations'
               ? 'bg-white dark:bg-dark-900 text-primary-600 dark:text-primary-400 shadow-sm border border-slate-200/20'
               : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
-          <Activity className="w-4 h-4" /> Operations
+          <Activity className="w-4 h-4 flex-shrink-0" /> Operations
         </button>
         <button
           onClick={() => setActiveTab('donorRegistry')}
-          className={`flex-grow py-3 px-4 text-center text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 ${
+          className={`flex-grow flex-shrink-0 py-3 px-4 text-center text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 ${
             activeTab === 'donorRegistry'
               ? 'bg-white dark:bg-dark-900 text-primary-600 dark:text-primary-400 shadow-sm border border-slate-200/20'
               : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
-          <Users className="w-4 h-4" /> Smart Match Finder
+          <Users className="w-4 h-4 flex-shrink-0" /> Smart Match Finder
         </button>
         <button
           onClick={() => setActiveTab('browseRequests')}
-          className={`flex-grow py-3 px-4 text-center text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 ${
+          className={`flex-grow flex-shrink-0 py-3 px-4 text-center text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 ${
             activeTab === 'browseRequests'
               ? 'bg-white dark:bg-dark-900 text-primary-600 dark:text-primary-400 shadow-sm border border-slate-200/20'
               : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
-          <Heart className="w-4 h-4" /> Browse Regional Requests
+          <Heart className="w-4 h-4 flex-shrink-0" /> Browse Regional Requests
         </button>
       </div>
 
