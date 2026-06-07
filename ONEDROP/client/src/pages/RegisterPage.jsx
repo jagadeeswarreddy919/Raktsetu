@@ -76,7 +76,7 @@ const schema = yup.object().shape({
   }),
 
   // Location details
-  place: yup.string().required('Place / Area is required'),
+  place: yup.string().required('State, District, and City/Mandal selection is required'),
   pincode: yup.string()
     .matches(/^\d{6}$/, 'Pincode must be a valid 6-digit postal code')
     .required('Pincode is required'),
@@ -104,53 +104,10 @@ const RegisterPage = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Auto-complete Place Selection logic
-  const [placeQuery, setPlaceQuery] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedPlace, setSelectedPlace] = useState(null);
-  const suggestionsRef = useRef(null);
-
-  // Flat map STATES_DATA into a searchable location index
-  const placesDatabase = useMemo(() => {
-    const list = [];
-    try {
-      Object.entries(STATES_DATA).forEach(([stateName, districts]) => {
-        Object.entries(districts).forEach(([districtName, mandals]) => {
-          mandals.forEach(mandalName => {
-            list.push({
-              mandal: mandalName,
-              district: districtName,
-              state: stateName,
-              label: `${mandalName}, ${districtName}, ${stateName}`
-            });
-          });
-        });
-      });
-    } catch (err) {
-      console.error("Failed to flat-map states database:", err);
-    }
-    return list;
-  }, []);
-
-  // Filter suggestions dynamically
-  const filteredSuggestions = useMemo(() => {
-    if (!placeQuery || placeQuery.length < 2) return [];
-    const query = placeQuery.toLowerCase();
-    return placesDatabase.filter(place => 
-      place.label.toLowerCase().includes(query)
-    ).slice(0, 6);
-  }, [placeQuery, placesDatabase]);
-
-  // Handle outside click to hide suggestions
-  useEffect(() => {
-    const handleOutsideClick = (e) => {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target)) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, []);
+  // Selected location dropdown state variables
+  const [regState, setRegState] = useState('');
+  const [regDistrict, setRegDistrict] = useState('');
+  const [regCity, setRegCity] = useState('');
 
   // React Hook Form initialization
   const { 
@@ -195,6 +152,9 @@ const RegisterPage = () => {
         setValue('gender', 'Male');
         setValue('weight', 70);
         setValue('place', 'Electronics City, Bangalore Urban, Karnataka');
+        setRegState('Karnataka');
+        setRegDistrict('Bangalore');
+        setRegCity('Electronic City');
         setValue('pincode', '560100');
         setValue('terms', true);
         setValue('privacy', true);
@@ -247,23 +207,9 @@ const RegisterPage = () => {
     setToast(null);
 
     // Build regional parameters cleanly
-    let stateVal = 'Andhra Pradesh';
-    let districtVal = 'YSR Kadapa';
-    let cityVal = data.place;
-
-    if (selectedPlace) {
-      stateVal = selectedPlace.state;
-      districtVal = selectedPlace.district;
-      cityVal = selectedPlace.mandal;
-    } else {
-      // Attempt manual extraction if suggestions weren't clicked
-      const tokens = data.place.split(',').map(t => t.trim());
-      if (tokens.length >= 3) {
-        cityVal = tokens[0];
-        districtVal = tokens[1];
-        stateVal = tokens[2];
-      }
-    }
+    const stateVal = regState;
+    const districtVal = regDistrict;
+    const cityVal = regCity;
 
     const payload = {
       fullName: data.fullName,
@@ -916,68 +862,78 @@ const RegisterPage = () => {
                 Section C: Proximity Coordinates
               </h4>
 
-              <div className="grid sm:grid-cols-3 gap-4">
+              <div className="grid sm:grid-cols-4 gap-4">
                 
-                {/* Searchable Place / Area input */}
-                <div className="sm:col-span-2 relative">
+                {/* State Dropdown */}
+                <div>
                   <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                    Place / Area (Searchable Location)
+                    State
                   </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3.5 top-3 w-4.5 h-4.5 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Type district or city (e.g. Kadapa)"
-                      value={placeQuery}
-                      onChange={(e) => {
-                        setPlaceQuery(e.target.value);
-                        setValue('place', e.target.value, { shouldValidate: true });
-                        setShowSuggestions(true);
-                      }}
-                      className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-dark-800 border rounded-xl text-sm outline-none transition-all ${
-                        errors.place 
-                          ? 'border-rose-500 focus:ring-1 focus:ring-rose-500 bg-rose-50/20' 
-                          : 'border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-red-500'
-                      }`}
-                    />
-                  </div>
-                  <input type="hidden" {...register('place')} />
-
-                  {/* Glassmorphic Autocomplete Suggestions Dropdown */}
-                  {showSuggestions && filteredSuggestions.length > 0 && (
-                    <div 
-                      ref={suggestionsRef}
-                      className="absolute left-0 right-0 mt-1 z-30 max-h-56 overflow-y-auto bg-white/95 dark:bg-dark-900/95 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl backdrop-blur-md divide-y divide-slate-100 dark:divide-slate-850"
-                    >
-                      {filteredSuggestions.map((place, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => {
-                            setSelectedPlace(place);
-                            setPlaceQuery(place.label);
-                            setValue('place', place.label, { shouldValidate: true });
-                            setShowSuggestions(false);
-                            // Auto-inject default pincode if Kadapa Mandal is picked for ease
-                            if (place.mandal === 'Kadapa Mandal') {
-                              setValue('pincode', '516293');
-                            }
-                          }}
-                          className="w-full text-left px-4 py-2.5 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 text-xs font-semibold text-slate-700 dark:text-slate-350 transition-colors flex items-center gap-2"
-                        >
-                          <MapPin className="w-3.5 h-3.5 text-red-500" />
-                          <span>{place.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {errors.place && (
-                    <p className="text-[10px] font-bold text-rose-500 mt-1 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" /> {errors.place.message}
-                    </p>
-                  )}
+                  <select
+                    value={regState}
+                    onChange={(e) => {
+                      setRegState(e.target.value);
+                      setRegDistrict('');
+                      setRegCity('');
+                      setValue('place', '');
+                    }}
+                    className={`w-full p-2.5 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none text-slate-800 dark:text-slate-100`}
+                  >
+                    <option value="">Select State</option>
+                    {Object.keys(STATES_DATA).map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                 </div>
+
+                {/* District Dropdown */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    District
+                  </label>
+                  <select
+                    disabled={!regState}
+                    value={regDistrict}
+                    onChange={(e) => {
+                      setRegDistrict(e.target.value);
+                      setRegCity('');
+                      setValue('place', '');
+                    }}
+                    className={`w-full p-2.5 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none disabled:opacity-55 text-slate-800 dark:text-slate-100`}
+                  >
+                    <option value="">Select District</option>
+                    {Object.keys(STATES_DATA[regState] || {}).map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* City Dropdown */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    City / Mandal
+                  </label>
+                  <select
+                    disabled={!regDistrict}
+                    value={regCity}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setRegCity(val);
+                      if (val) {
+                        setValue('place', `${val}, ${regDistrict}, ${regState}`, { shouldValidate: true });
+                      } else {
+                        setValue('place', '');
+                      }
+                    }}
+                    className={`w-full p-2.5 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none disabled:opacity-55 text-slate-800 dark:text-slate-100`}
+                  >
+                    <option value="">Select City / Mandal</option>
+                    {(STATES_DATA[regState]?.[regDistrict] || []).map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <input type="hidden" {...register('place')} />
 
                 {/* Pincode */}
                 <div>
@@ -1002,6 +958,11 @@ const RegisterPage = () => {
                 </div>
 
               </div>
+              {errors.place && (
+                <p className="text-[10px] font-bold text-rose-500 mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> {errors.place.message}
+                </p>
+              )}
 
               {/* Panchayat / Village */}
               <div className="grid sm:grid-cols-3 gap-4">
