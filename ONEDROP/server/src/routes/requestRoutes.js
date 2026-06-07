@@ -13,6 +13,7 @@ router.post('/:id/pledge', authenticate, requestController.pledgeDonation);
 router.put('/:id/pledge/:pledgeId', authenticate, requestController.updatePledgeStatus);
 router.delete('/:id', authenticate, requestController.deleteRequest);
 router.put('/:id', authenticate, requestController.updateRequest);
+router.post('/:id/alert-donor/:donorId', authenticate, requestController.alertDonor);
 
 
 module.exports = router;

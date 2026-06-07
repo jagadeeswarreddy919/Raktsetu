@@ -419,6 +419,8 @@ const DonorDashboard = () => {
   // My Requests Tracking
   const [myRequests, setMyRequests] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [matchingDonors, setMatchingDonors] = useState([]);
+  const [loadingMatchingDonors, setLoadingMatchingDonors] = useState(false);
   const [requestsSubTab, setRequestsSubTab] = useState('browse'); // 'browse' | 'create'
   const [declinedRequests, setDeclinedRequests] = useState(() => JSON.parse(localStorage.getItem('declinedRequests') || '[]'));
 
@@ -1058,6 +1060,51 @@ const DonorDashboard = () => {
       setMyRequests(filtered);
     } catch (err) {
       console.error('[Fetch Requests Error]', err);
+    }
+  };
+
+  // Fetch matching donors specifically for the selected request
+  useEffect(() => {
+    if (!selectedRequest) {
+      setMatchingDonors([]);
+      return;
+    }
+    const getMatchingDonors = async () => {
+      setLoadingMatchingDonors(true);
+      try {
+        const params = {
+          bloodGroup: selectedRequest.bloodGroup,
+          state: selectedRequest.state,
+          district: selectedRequest.district,
+          city: selectedRequest.city,
+          pincode: selectedRequest.pincode,
+          excludeId: user?._id
+        };
+        const res = await axios.get(`${API_URL}/api/requests/search/donors`, { params });
+        // Filter out donors who already pledged to this request
+        const pledgedIds = new Set(selectedRequest.donorsPledged?.map(p => (p.donor?._id || p.donor)?.toString()) || []);
+        const filteredMatches = res.data.filter(d => !pledgedIds.has(d._id.toString()));
+        setMatchingDonors(filteredMatches);
+      } catch (err) {
+        console.error('[Fetch Matching Donors for Selected Request Error]', err);
+      } finally {
+        setLoadingMatchingDonors(false);
+      }
+    };
+    getMatchingDonors();
+  }, [selectedRequest, user]);
+
+  const handleAlertDonor = async (requestId, donorId, donorName) => {
+    if (handleActionBlock('send match notification')) return;
+    try {
+      await axios.post(
+        `${API_URL}/api/requests/${requestId}/alert-donor/${donorId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert(`Alert notification successfully sent to donor ${donorName}!`);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to send alert notification.');
     }
   };
 
@@ -2256,6 +2303,90 @@ const DonorDashboard = () => {
                                     <p className="text-[10px] text-slate-500 italic">Waiting for volunteer pledges...</p>
                                   )}
                                 </div>
+
+                                {/* Toggle Matching Donors Button */}
+                                <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedRequest(selectedRequest?._id === req._id ? null : req)}
+                                    className="w-full py-1.5 bg-slate-100 dark:bg-dark-850 hover:bg-slate-200 dark:hover:bg-dark-800 text-slate-700 dark:text-slate-350 text-[10px] font-black uppercase rounded-lg transition-all flex items-center justify-center gap-1"
+                                  >
+                                    <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                                    {selectedRequest?._id === req._id ? 'Hide Matching Donors' : 'Show Matching Donors'}
+                                  </button>
+                                </div>
+
+                                {selectedRequest?._id === req._id && (
+                                  <div className="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-2.5 mt-2 animate-fade-in">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Available Matching Donors ({matchingDonors.length})</p>
+                                    {loadingMatchingDonors ? (
+                                      <div className="text-center py-2">
+                                        <Loader2 className="w-4 h-4 animate-spin mx-auto text-primary-500" />
+                                      </div>
+                                    ) : matchingDonors.length > 0 ? (
+                                      <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                                        {matchingDonors.map((donor) => {
+                                          let dWaPhone = (donor.phone || '').trim().replace(/\s+/g, '');
+                                          if (!dWaPhone.startsWith('+')) {
+                                            dWaPhone = dWaPhone.length === 10 ? `91${dWaPhone}` : dWaPhone;
+                                          } else {
+                                            dWaPhone = dWaPhone.replace('+', '');
+                                          }
+                                          const dWaMsg = encodeURIComponent(`Hi ${donor.fullName}, I saw you are a matching donor on ONEDROP. We need ${req.bloodGroup} blood urgently. Can you help?`);
+                                          const dWaUrl = `https://wa.me/${dWaPhone}?text=${dWaMsg}`;
+
+                                          return (
+                                            <div key={donor._id} className="p-2.5 bg-slate-50 dark:bg-dark-850 rounded-xl flex flex-col gap-2 text-[11px]">
+                                              <div className="flex justify-between items-start">
+                                                <div>
+                                                  <p className="font-bold text-slate-850 dark:text-white">{donor.fullName}</p>
+                                                  <p className="text-[9px] text-slate-450">{donor.city}, {donor.state} • Score: {donor.matchScore || 0}</p>
+                                                </div>
+                                                <span className="px-2 py-0.5 rounded text-[9px] font-black bg-primary-100 text-primary-650">
+                                                  {donor.bloodGroup}
+                                                </span>
+                                              </div>
+
+                                              <div className="flex flex-wrap gap-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+                                                {donor.phone && (
+                                                  <a
+                                                    href={`tel:${donor.phone}`}
+                                                    className="flex items-center gap-1 px-2 py-1 bg-emerald-600 text-white rounded text-[9px] font-bold hover:bg-emerald-700 transition"
+                                                  >
+                                                    <Phone className="w-2.5 h-2.5" /> Call
+                                                  </a>
+                                                )}
+                                                <a
+                                                  href={dWaUrl}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="flex items-center gap-1 px-2 py-1 bg-[#25D366] text-white rounded text-[9px] font-bold hover:bg-[#1ebe59] transition"
+                                                >
+                                                  <svg xmlns="http://www.w3.org/2000/svg" className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.556 4.116 1.527 5.849L.057 23.929a.5.5 0 0 0 .609.61l6.185-1.456A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.892a9.87 9.87 0 0 1-5.017-1.374l-.36-.213-3.73.877.906-3.633-.234-.374A9.877 9.877 0 0 1 2.108 12C2.108 6.534 6.534 2.108 12 2.108S21.892 6.534 21.892 12 17.466 21.892 12 21.892z"/></svg>
+                                                  WhatsApp
+                                                </a>
+                                                <button
+                                                  onClick={() => handleInitiateChat(donor._id)}
+                                                  className="flex items-center gap-1 px-2 py-1 bg-indigo-600 text-white rounded text-[9px] font-bold hover:bg-indigo-700 transition"
+                                                >
+                                                  <MessageSquare className="w-2.5 h-2.5" /> Chat
+                                                </button>
+                                                <button
+                                                  onClick={() => handleAlertDonor(req._id, donor._id, donor.fullName)}
+                                                  className="ml-auto flex items-center gap-1 px-2 py-1 bg-rose-600 text-white rounded text-[9px] font-bold hover:bg-rose-700 transition"
+                                                >
+                                                  Alert
+                                                </button>
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <p className="text-xs text-slate-400 italic">No matching proximity donors found.</p>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             ))
                           ) : (

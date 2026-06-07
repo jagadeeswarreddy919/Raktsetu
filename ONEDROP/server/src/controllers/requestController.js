@@ -909,3 +909,119 @@ exports.updateRequest = async (req, res) => {
   }
 };
 
+exports.alertDonor = async (req, res) => {
+  try {
+    const { id, donorId } = req.params;
+    const request = await BloodRequest.findById(id);
+    if (!request) {
+      return res.status(404).json({ message: 'Blood request not found.' });
+    }
+
+    const donorUser = await User.findById(donorId);
+    if (!donorUser || donorUser.role !== 'Donor') {
+      return res.status(404).json({ message: 'Matching donor user not found.' });
+    }
+
+    // Ensure only the requester (or admin) can alert donors for this request
+    if (request.requester.toString() !== req.user.id.toString() && !['Admin', 'Super Admin'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Unauthorized: Only the publisher of this request can send alerts.' });
+    }
+
+    const notificationMessage = `🚨 Urgent Alert! You are a matching donor for ${request.patientName} who needs ${request.bloodGroup} blood at ${request.hospitalName}, ${request.city}. Please pledge if you are available.`;
+
+    // Check if notification already exists to prevent duplication
+    const existingNotif = await Notification.findOne({
+      recipient: donorId,
+      bloodRequest: request._id,
+      type: request.emergencyMode ? 'emergency_request' : 'new_request'
+    });
+
+    if (!existingNotif) {
+      await Notification.create({
+        recipient: donorId,
+        donor: req.user.id,
+        bloodRequest: request._id,
+        type: request.emergencyMode ? 'emergency_request' : 'new_request',
+        message: notificationMessage,
+        requestStatus: 'Pending'
+      });
+    }
+
+    // Real-time socket notification
+    notifyUser(donorId, 'new_blood_request', {
+      request: request,
+      requestId: request._id,
+      requester: req.user.id,
+      requesterId: req.user.id,
+      patientName: request.patientName,
+      bloodGroup: request.bloodGroup,
+      unitsRequired: request.unitsRequired,
+      hospitalName: request.hospitalName,
+      place: `${request.city}, ${request.district}, ${request.state}`,
+      pincode: request.pincode,
+      emergencyMode: request.emergencyMode,
+      neededBy: request.neededBy,
+      contactNumber: req.user.phone,
+      createdAt: request.createdAt
+    });
+
+    // FCM Notification
+    if (donorUser.fcmToken) {
+      try {
+        sendPushNotification(donorUser.fcmToken, {
+          title: request.emergencyMode ? '🚨 EMERGENCY BLOOD MATCH REQUIRED' : 'Blood Match Request Found',
+          body: `Patient ${request.patientName} requires ${request.bloodGroup} at ${request.hospitalName}.`,
+          data: {
+            type: request.emergencyMode ? 'emergency_request' : 'new_request',
+            requestId: request._id.toString(),
+            requesterId: req.user.id.toString(),
+            chatPartnerId: req.user.id.toString()
+          }
+        });
+      } catch (fcmErr) {
+        console.error('[Alert Donor] FCM send failed:', fcmErr.message);
+      }
+    }
+
+    // SMS Notification
+    try {
+      const smsMessage = `🚨 ONEDROP DIRECT ALERT: You are a matching donor for patient ${request.patientName} who needs ${request.bloodGroup} at ${request.hospitalName}, ${request.city}. Accept request on your dashboard.`;
+      await sendSMS({
+        to: donorUser.phone,
+        message: smsMessage
+      });
+    } catch (smsErr) {
+      console.error(`[Alert Donor] SMS failed:`, smsErr.message);
+    }
+
+    // Email Notification
+    try {
+      const emailHtml = getEmailTemplate(
+        request.emergencyMode ? '🚨 Urgent: Emergency Blood Request Match' : 'Blood Donation Request Match Found',
+        `Dear ${donorUser.fullName},<br><br>` +
+        `You have been directly alerted for a blood request matching your blood group (<strong>${request.bloodGroup}</strong>) in your area.<br><br>` +
+        `<strong>Patient Name:</strong> ${request.patientName}<br>` +
+        `<strong>Units Required:</strong> ${request.unitsRequired} Units<br>` +
+        `<strong>Hospital Location:</strong> ${request.hospitalName}, ${request.city}, ${request.state}<br>` +
+        `<strong>Proximity Pincode:</strong> ${request.pincode}<br>` +
+        `<strong>Emergency Mode:</strong> ${request.emergencyMode ? 'URGENT/CRITICAL' : 'Standard'}<br><br>` +
+        `If you are eligible and currently available to donate, please access your dashboard to accept the request and coordinate direct secure communications.`,
+        `http://localhost:5173/donor-dashboard`,
+        'Pledge Blood Donation'
+      );
+      await sendMail({
+        to: donorUser.email,
+        subject: request.emergencyMode ? `🚨 EMERGENCY: ${request.bloodGroup} Match Required!` : `Blood Match Found: ${request.bloodGroup}`,
+        html: emailHtml
+      });
+    } catch (mailErr) {
+      console.error(`[Alert Donor] Email failed:`, mailErr.message);
+    }
+
+    res.status(200).json({ message: `Successfully sent direct alert notification to donor ${donorUser.fullName}.` });
+  } catch (error) {
+    console.error(`[Request Controller] Alert donor error: ${error.message}`);
+    res.status(500).json({ message: 'Failed to send alert notification to donor.', error: error.message });
+  }
+};
+
