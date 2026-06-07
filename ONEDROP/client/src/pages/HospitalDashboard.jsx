@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   ShieldAlert, Activity, ClipboardList, Database, Save, CalendarRange, 
   Plus, Heart, MessageSquare, Phone, MapPin, X, RefreshCw, Loader2,
-  Printer, Search, Award, Users, Sparkles 
+  Printer, Search, Award, Users, Sparkles, AlertCircle
 } from 'lucide-react';
 import { updateProfileSuccess, logout } from '../redux/authSlice';
 import { 
@@ -194,6 +194,10 @@ const HospitalDashboard = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [matchingDonors, setMatchingDonors] = useState([]);
   const [loadingMatchingDonors, setLoadingMatchingDonors] = useState(false);
+  const [showMatchesModal, setShowMatchesModal] = useState(false);
+  const [matchesModalRequest, setMatchesModalRequest] = useState(null);
+  const [modalMatchingDonors, setModalMatchingDonors] = useState([]);
+  const [loadingModalMatchingDonors, setLoadingModalMatchingDonors] = useState(false);
 
   // Edit Request Modal State
   const [showEditRequestModal, setShowEditRequestModal] = useState(false);
@@ -271,6 +275,36 @@ const HospitalDashboard = () => {
     };
     getMatchingDonors();
   }, [selectedRequest, user]);
+
+  // Fetch matching donors specifically for the matches modal request
+  useEffect(() => {
+    if (!matchesModalRequest) {
+      setModalMatchingDonors([]);
+      return;
+    }
+    const getModalMatchingDonors = async () => {
+      setLoadingModalMatchingDonors(true);
+      try {
+        const params = {
+          bloodGroup: matchesModalRequest.bloodGroup,
+          state: matchesModalRequest.state,
+          district: matchesModalRequest.district,
+          city: matchesModalRequest.city,
+          pincode: matchesModalRequest.pincode,
+          excludeId: user?._id
+        };
+        const res = await axios.get(`${API_URL}/api/requests/search/donors`, { params });
+        const pledgedIds = new Set(matchesModalRequest.donorsPledged?.map(p => (p.donor?._id || p.donor)?.toString()) || []);
+        const filteredMatches = res.data.filter(d => !pledgedIds.has(d._id.toString()));
+        setModalMatchingDonors(filteredMatches);
+      } catch (err) {
+        console.error('[Fetch Modal Matching Donors Error]', err);
+      } finally {
+        setLoadingModalMatchingDonors(false);
+      }
+    };
+    getModalMatchingDonors();
+  }, [matchesModalRequest, user]);
 
   const handleAlertDonor = async (requestId, donorId, donorName) => {
     if (handleActionBlock('send match notification')) return;
@@ -401,7 +435,7 @@ const HospitalDashboard = () => {
     e.preventDefault();
     if (handleActionBlock('create a blood request')) return;
     try {
-      await axios.post(
+      const res = await axios.post(
         `${API_URL}/api/requests`,
         {
           patientName,
@@ -421,6 +455,11 @@ const HospitalDashboard = () => {
       );
 
       alert('Blood request ticket published successfully. Smart matching alerts sent in real-time!');
+      
+      const newRequest = res.data.request;
+      setMatchesModalRequest(newRequest);
+      setShowMatchesModal(true);
+
       setPatientName('');
       setUnitsRequired(1);
       setNeededBy('');
@@ -903,7 +942,19 @@ const HospitalDashboard = () => {
 
                     {/* Available Matching Donors */}
                     <div className="border-t border-slate-100 dark:border-slate-805 pt-4 space-y-3">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Available Matching Donors ({matchingDonors.length})</p>
+                      <div className="flex justify-between items-center">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Available Matching Donors ({matchingDonors.length})</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMatchesModalRequest(selectedRequest);
+                            setShowMatchesModal(true);
+                          }}
+                          className="px-2 py-0.5 bg-primary-600 hover:bg-primary-700 text-white rounded text-[9px] font-black uppercase tracking-wider transition-all"
+                        >
+                          ⚡ Contact Fast
+                        </button>
+                      </div>
                       {loadingMatchingDonors ? (
                         <div className="text-center py-4">
                           <Loader2 className="w-5 h-5 animate-spin mx-auto text-primary-500" />
@@ -1893,6 +1944,162 @@ const HospitalDashboard = () => {
       )}
 
 
+      {/* Quick Matching Donors Modal */}
+      {showMatchesModal && matchesModalRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-3xl bg-white/95 dark:bg-dark-900/95 border-2 border-primary-500/30 p-6 md:p-8 rounded-3xl shadow-2xl shadow-primary-500/10 max-h-[90vh] overflow-y-auto animate-slide-up flex flex-col">
+            
+            {/* Close button */}
+            <button 
+              onClick={() => {
+                setShowMatchesModal(false);
+                setMatchesModalRequest(null);
+              }}
+              className="absolute top-6 right-6 p-2 hover:bg-slate-100 dark:hover:bg-dark-800 rounded-full text-slate-500 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="space-y-2 pb-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 text-[10px] font-black uppercase bg-primary-500 text-white rounded-full animate-pulse">
+                  Matching Donors List
+                </span>
+                <span className="px-3 py-1 text-[10px] font-black uppercase bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 rounded-full">
+                  Blood Group: {matchesModalRequest.bloodGroup}
+                </span>
+              </div>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Heart className="w-6 h-6 text-primary-500 fill-primary-500 animate-pulse" /> 
+                Contact Matching Donors Fast
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                We have found proximity matching donors. Call, Chat, or WhatsApp them immediately to coordinate blood donation for <span className="font-extrabold text-slate-800 dark:text-white">{matchesModalRequest.patientName}</span> at <span className="font-extrabold text-slate-800 dark:text-white">{matchesModalRequest.hospitalName}</span>.
+              </p>
+            </div>
+
+            {/* Donor cards wrapper */}
+            <div className="flex-grow overflow-y-auto py-6 space-y-4 max-h-[50vh] pr-2">
+              {loadingModalMatchingDonors ? (
+                <div className="text-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary-500" />
+                  <p className="text-xs text-slate-400 mt-2">Searching live matching database...</p>
+                </div>
+              ) : modalMatchingDonors.length > 0 ? (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {modalMatchingDonors.map((donor) => {
+                    let dWaPhone = (donor.phone || '').trim().replace(/\s+/g, '');
+                    if (!dWaPhone.startsWith('+')) {
+                      dWaPhone = dWaPhone.length === 10 ? `91${dWaPhone}` : dWaPhone;
+                    } else {
+                      dWaPhone = dWaPhone.replace('+', '');
+                    }
+                    const dWaMsg = encodeURIComponent(`Hi ${donor.fullName}, I saw you are a matching donor on ONEDROP. We need ${matchesModalRequest.bloodGroup} blood urgently. Can you help?`);
+                    const dWaUrl = `https://wa.me/${dWaPhone}?text=${dWaMsg}`;
+
+                    return (
+                      <div 
+                        key={donor._id} 
+                        className="p-4 bg-slate-50 dark:bg-dark-800/50 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between gap-4 transition-all hover:scale-[1.01] hover:border-primary-500/20"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-3">
+                            <img 
+                              src={donor.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${donor.fullName}`}
+                              alt={donor.fullName}
+                              className="w-10 h-10 rounded-full border border-slate-200 shadow-sm object-cover"
+                            />
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-extrabold text-xs text-slate-800 dark:text-white">{donor.fullName}</span>
+                                {donor.isVerifiedDonor && (
+                                  <Award className="w-3.5 h-3.5 text-blue-500 fill-blue-500" title="Verified Lifesaver" />
+                                )}
+                              </div>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase">{donor.city}, {donor.state}</p>
+                            </div>
+                          </div>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-primary-100 text-primary-600 dark:bg-primary-950/30 dark:text-primary-400">
+                            {donor.bloodGroup}
+                          </span>
+                        </div>
+
+                        {/* Match details & distance indicators */}
+                        <div className="grid grid-cols-2 gap-2 text-[10px] bg-white dark:bg-dark-900 p-2 rounded-xl border border-slate-100 dark:border-slate-800/40">
+                          <div>
+                            <span className="text-slate-400">Status:</span>
+                            <p className="font-bold text-emerald-500">Available</p>
+                          </div>
+                          <div>
+                            <span className="text-slate-400">Match Score:</span>
+                            <p className="font-bold text-indigo-500">{donor.matchScore || 95}%</p>
+                          </div>
+                        </div>
+
+                        {/* Direct coordination panel */}
+                        <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                          {donor.phone && (
+                            <a
+                              href={`tel:${donor.phone}`}
+                              className="flex-grow flex items-center justify-center gap-1 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-extrabold hover:bg-emerald-700 transition"
+                            >
+                              <Phone className="w-3 h-3" /> Call
+                            </a>
+                          )}
+                          <a
+                            href={dWaUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-grow flex items-center justify-center gap-1 py-1.5 bg-[#25D366] text-white rounded-lg text-[10px] font-extrabold hover:bg-[#1ebe59] transition"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.556 4.116 1.527 5.849L.057 23.929a.5.5 0 0 0 .609.61l6.185-1.456A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.892a9.87 9.87 0 0 1-5.017-1.374l-.36-.213-3.73.877.906-3.633-.234-.374A9.877 9.877 0 0 1 2.108 12C2.108 6.534 6.534 2.108 12 2.108S21.892 6.534 21.892 12 17.466 21.892 12 21.892z"/></svg> WhatsApp
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => handleInitiateChat(donor._id)}
+                            className="flex-grow flex items-center justify-center gap-1 py-1.5 bg-indigo-600 text-white rounded-lg text-[10px] font-extrabold hover:bg-indigo-700 transition"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" /> Chat
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAlertDonor(matchesModalRequest._id, donor._id, donor.fullName)}
+                            className="flex-grow flex items-center justify-center gap-1 py-1.5 bg-rose-600 text-white rounded-lg text-[10px] font-extrabold hover:bg-rose-700 transition"
+                          >
+                            Alert
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-slate-400 space-y-2">
+                  <AlertCircle className="w-10 h-10 mx-auto text-slate-350 animate-pulse" />
+                  <p className="text-xs font-extrabold">No matching proximity donors found in your area.</p>
+                  <p className="text-[10px]">Try searching with "Smart Match Finder" or expanding your area parameters.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal footer action */}
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMatchesModal(false);
+                  setMatchesModalRequest(null);
+                }}
+                className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition"
+              >
+                Close Matches Panel
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 };
