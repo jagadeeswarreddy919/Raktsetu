@@ -419,7 +419,7 @@ exports.toggleRequestEmergency = async (req, res) => {
 // 8. Broadcast platform-wide administrative notification
 exports.broadcastNotification = async (req, res) => {
   try {
-    const { title, message, targetRole } = req.body;
+    const { title, message, targetRole, bloodGroup, city, state, availabilityStatus } = req.body;
 
     if (!title || !message) {
       return res.status(400).json({ message: 'Title and message details are required.' });
@@ -433,20 +433,58 @@ exports.broadcastNotification = async (req, res) => {
       query.role = { $in: ['Donor', 'Recipient', 'Hospital'] };
     }
 
-    const targetUsers = await User.find(query).select('_id');
+    if (bloodGroup && bloodGroup !== 'All') {
+      query.bloodGroup = bloodGroup;
+    }
+
+    if (city) {
+      query.city = { $regex: new RegExp(city, 'i') };
+    }
+
+    if (state) {
+      query.state = { $regex: new RegExp(state, 'i') };
+    }
+
+    if (availabilityStatus && availabilityStatus !== 'All') {
+      query.availabilityStatus = availabilityStatus;
+    }
+
+    const targetUsers = await User.find(query).select('_id fcmToken fullName');
     if (targetUsers.length === 0) {
-      return res.status(200).json({ message: 'No matching users found for notification broadcast.' });
+      return res.status(200).json({ message: 'No matching users found for notification broadcast.', count: 0 });
     }
 
     const notificationsData = targetUsers.map(user => ({
       recipient: user._id,
       donor: req.user.id,
-      type: 'greeting',
+      type: 'general_announcement',
       message: `📢 [Admin Broadcast] ${title}: ${message}`,
       requestStatus: 'None'
     }));
 
     await Notification.insertMany(notificationsData);
+
+    // Send push notifications (FCM)
+    let successCount = 0;
+    const { sendPushNotification } = require('../utils/firebase');
+    for (const user of targetUsers) {
+      if (user.fcmToken) {
+        try {
+          const result = await sendPushNotification(user.fcmToken, {
+            title: title,
+            body: message,
+            data: {
+              type: 'general_announcement'
+            }
+          });
+          if (result && result.success) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`[Admin Broadcast FCM] Failed to notify ${user.fullName}:`, err.message);
+        }
+      }
+    }
 
     try {
       const targetUserIds = targetUsers.map(u => u._id);
@@ -459,16 +497,42 @@ exports.broadcastNotification = async (req, res) => {
       console.warn('[Admin Broadcast Sockets] Failed to emit socket broadcast:', socketErr.message);
     }
 
+    // Save logs to NotificationLog
+    const NotificationLog = require('../models/NotificationLog');
+    await NotificationLog.create({
+      title,
+      message,
+      targetRole: targetRole || 'All',
+      bloodGroup: bloodGroup || 'All',
+      locationFilter: { city: city || '', state: state || '' },
+      donorStatusFilter: availabilityStatus || 'All',
+      sentBy: req.user.id,
+      successCount: targetUsers.length
+    });
+
     await AuditLog.create({
       action: 'GLOBAL_BROADCAST_ADMIN',
       performedBy: req.user.id,
       role: req.user.role,
-      details: { title, targetRole, messageBody: message }
+      details: { title, targetRole, messageBody: message, successCount: targetUsers.length }
     });
 
-    res.status(201).json({ message: `Successfully broadcasted to ${targetUsers.length} users.` });
+    res.status(201).json({ message: `Successfully broadcasted to ${targetUsers.length} users.`, count: targetUsers.length });
   } catch (error) {
     res.status(500).json({ message: 'Failed to broadcast global notification.', error: error.message });
+  }
+};
+
+// 8b. Retrieve administrative notification delivery logs
+exports.getNotificationLogs = async (req, res) => {
+  try {
+    const NotificationLog = require('../models/NotificationLog');
+    const logs = await NotificationLog.find()
+      .populate('sentBy', 'fullName email')
+      .sort({ createdAt: -1 });
+    res.status(200).json(logs);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch notification logs.', error: error.message });
   }
 };
 

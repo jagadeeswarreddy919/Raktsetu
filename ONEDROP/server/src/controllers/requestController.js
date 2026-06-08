@@ -110,7 +110,7 @@ exports.createRequest = async (req, res) => {
     const {
       patientName, bloodGroup, unitsRequired, hospitalName,
       state, district, city, area, village, pincode, hospitalAddress,
-      emergencyMode, neededBy, reason
+      emergencyMode, neededBy, reason, latitude, longitude
     } = req.body;
 
     const newRequest = await BloodRequest.create({
@@ -128,7 +128,11 @@ exports.createRequest = async (req, res) => {
       hospitalAddress,
       emergencyMode: emergencyMode || false,
       neededBy,
-      reason
+      reason,
+      location: latitude && longitude ? {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)]
+      } : undefined
     });
 
     await AuditLog.create({
@@ -159,7 +163,19 @@ exports.createRequest = async (req, res) => {
       // Restrict notifications: send blood requests to matching local area only.
       // Admin alert notifications bypass location filters to reach all users system-wide.
       const isAdmin = req.user.role === 'Admin' || req.user.role === 'Super Admin';
-      if (!isAdmin) {
+      
+      if (latitude && longitude) {
+        const radiusInKm = parseFloat(req.body.radius) || 10;
+        donorQuery.location = {
+          $near: {
+            $geometry: {
+              type: 'Point',
+              coordinates: [parseFloat(longitude), parseFloat(latitude)]
+            },
+            $maxDistance: radiusInKm * 1000
+          }
+        };
+      } else if (!isAdmin) {
         const locationFilters = [];
         if (pincode) locationFilters.push({ pincode });
         if (village) locationFilters.push({ village });
@@ -249,8 +265,8 @@ exports.createRequest = async (req, res) => {
 
           if (recUser.fcmToken) {
             sendPushNotification(recUser.fcmToken, {
-              title: emergencyMode ? '🚨 EMERGENCY BLOOD MATCH REQUIRED' : 'Blood Match Request Found',
-              body: `Patient: ${patientName} requires ${unitsRequired} units of ${bloodGroup} at ${hospitalName}.`,
+              title: 'Urgent Blood Request',
+              body: `${bloodGroup} blood needed near ${city || 'Tirupati'}. Tap to help save a life.`,
               data: {
                 type: emergencyMode ? 'emergency_request' : 'new_request',
                 requestId: newRequest._id.toString(),

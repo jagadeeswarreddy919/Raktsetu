@@ -24,6 +24,10 @@ const bloodRequestSchema = new mongoose.Schema({
   village: { type: String, default: '' },
   pincode: { type: String, required: true },
   hospitalAddress: { type: String, required: true },
+  location: {
+    type: { type: String, enum: ['Point'], default: 'Point' },
+    coordinates: { type: [Number], default: [79.4192, 13.6288] }
+  },
 
   emergencyMode: { type: Boolean, default: false },
   neededBy: { type: Date, required: true },

@@ -44,6 +44,10 @@ const userSchema = new mongoose.Schema({
   availabilityStatus: { type: String, enum: ['Available', 'Busy', 'Not Available', 'Emergency Only'], default: 'Available' },
   isVerifiedDonor: { type: Boolean, default: false },
   fcmToken: { type: String, default: '' },
+  location: {
+    type: { type: String, enum: ['Point'], default: 'Point' },
+    coordinates: { type: [Number], default: [79.4192, 13.6288] }
+  },
 
   // Hospital-specific Profiles
   hospitalLicenseNumber: { type: String, required: function() { return this.role === 'Hospital'; } },
@@ -100,5 +104,7 @@ userSchema.pre('save', async function(next) {
   }
   next();
 });
+
+userSchema.index({ location: '2dsphere' });
 
 module.exports = mongoose.model('User', userSchema);

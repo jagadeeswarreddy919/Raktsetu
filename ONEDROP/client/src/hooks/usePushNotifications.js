@@ -55,6 +55,10 @@ export const usePushNotifications = (onNotification) => {
               targetUrl = '/donor';
             } else if (data.type === 'request_accepted') {
               targetUrl = '/recipient';
+            } else if (data.type === 'camp_announcement') {
+              targetUrl = '/campaigns';
+            } else if (data.type === 'certificate_issued') {
+              targetUrl = '/donor-dashboard?action=certificate';
             } else if (data.chatPartnerId) {
               targetUrl = `/chat?partnerId=${data.chatPartnerId}`;
             }

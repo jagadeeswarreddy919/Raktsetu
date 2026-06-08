@@ -25,6 +25,7 @@ router.put('/hospital/:userId/inventory', adminController.updateHospitalInventor
 router.put('/requests/:requestId/status', adminController.updateRequestStatus);
 router.put('/requests/:requestId/emergency', adminController.toggleRequestEmergency);
 router.post('/broadcast', adminController.broadcastNotification);
+router.get('/notification-logs', adminController.getNotificationLogs);
 
 module.exports = router;
 

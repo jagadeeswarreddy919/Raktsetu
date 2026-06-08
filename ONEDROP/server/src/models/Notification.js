@@ -7,7 +7,10 @@ const notificationSchema = new mongoose.Schema({
   chat: { type: mongoose.Schema.Types.ObjectId, ref: 'Chat' },
   type: {
     type: String,
-    enum: ['new_request', 'request_accepted', 'emergency_request', 'donor_unavailable', 'chat_message', 'greeting'],
+    enum: [
+      'new_request', 'request_accepted', 'emergency_request', 'donor_unavailable', 'chat_message', 'greeting',
+      'camp_announcement', 'eligibility_reminder', 'certificate_issued', 'ngo_hospital_update', 'general_announcement'
+    ],
     required: true
   },
   message: { type: String, required: true },

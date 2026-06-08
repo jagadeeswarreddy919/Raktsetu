@@ -852,17 +852,43 @@ const DonorDashboard = () => {
           }
           return true;
         });
-        const mapped = filtered.map((n) => ({
-          id: n._id,
-          type: n.type === 'chat_message' ? 'chat' : n.type === 'greeting' ? 'greeting' : 'emergency',
-          title: n.type === 'greeting' ? '👋 Welcome' : n.type === 'chat_message' ? '💬 Chat' : '🩸 Blood Alert',
-          desc: n.message,
-          time: new Date(n.createdAt).toLocaleString(),
-          unread: !n.read,
-          chatPartnerId: n.donor?._id || n.donor,
-          rawRequest: n.bloodRequest ? { requester: n.donor?._id, requesterId: n.donor?._id } : null,
-          chatId: n.chat
-        }));
+        const mapped = filtered.map((n) => {
+          let type = 'emergency';
+          let title = '🩸 Blood Alert';
+          if (n.type === 'chat_message') {
+            type = 'chat';
+            title = '💬 Chat';
+          } else if (n.type === 'greeting') {
+            type = 'greeting';
+            title = '👋 Welcome';
+          } else if (n.type === 'camp_announcement') {
+            type = 'camp';
+            title = '⛺ Blood Camp';
+          } else if (n.type === 'eligibility_reminder') {
+            type = 'reminder';
+            title = '🗓️ Eligibility';
+          } else if (n.type === 'certificate_issued') {
+            type = 'certificate';
+            title = '🏆 Certificate';
+          } else if (n.type === 'ngo_hospital_update') {
+            type = 'update';
+            title = '🏥 Partner Update';
+          } else if (n.type === 'general_announcement') {
+            type = 'general';
+            title = '📢 Announcement';
+          }
+          return {
+            id: n._id,
+            type,
+            title,
+            desc: n.message,
+            time: new Date(n.createdAt).toLocaleString(),
+            unread: !n.read,
+            chatPartnerId: n.donor?._id || n.donor,
+            rawRequest: n.bloodRequest ? { requester: n.donor?._id, requesterId: n.donor?._id } : null,
+            chatId: n.chat
+          };
+        });
         setLogs(mapped);
       } catch (err) {
         console.error('Failed to load notifications', err);

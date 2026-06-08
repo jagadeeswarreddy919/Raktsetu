@@ -191,6 +191,59 @@ function scheduleNextMidnightCleanup() {
 }
 scheduleNextMidnightCleanup();
 
+// 4. Periodic reminder to open the app & check blood requests (every 5 hours)
+const User = require('./models/User');
+const { sendPushNotification } = require('./utils/firebase');
+
+const sendPeriodicReminders = async () => {
+  try {
+    const activeRequestsCount = await BloodRequest.countDocuments({ status: 'Pending' });
+    const usersWithFcm = await User.find({ fcmToken: { $ne: '', $exists: true } });
+
+    if (usersWithFcm.length === 0) {
+      console.log('[Scheduler] No users with registered FCM tokens found for app reminders.');
+      return;
+    }
+
+    let title = 'ONEDROP Reminder 🩸';
+    let body = 'Keep your donation availability updated and check for any nearby requests. Save a life today!';
+
+    if (activeRequestsCount > 0) {
+      title = '🚨 Active Blood Requests on ONEDROP';
+      body = `There are ${activeRequestsCount} active blood request(s) awaiting heroes. Open the app now to see if you can help!`;
+    }
+
+    console.log(`[Scheduler] Broadcasting periodic app reminder to ${usersWithFcm.length} users with tokens...`);
+
+    for (const user of usersWithFcm) {
+      try {
+        await sendPushNotification(user.fcmToken, {
+          title,
+          body,
+          data: {
+            type: 'app_reminder',
+            activeRequestsCount: activeRequestsCount.toString()
+          }
+        });
+      } catch (err) {
+        console.error(`[Scheduler] Failed to send push reminder to user ${user._id}: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    console.error(`[Scheduler] Failed to run periodic reminders: ${err.message}`);
+  }
+};
+
+// Execute initial check 1 minute after boot
+setTimeout(() => {
+  console.log('[Scheduler] Executing initial periodic app reminder check...');
+  sendPeriodicReminders();
+}, 60 * 1000);
+
+// Schedule every 5 hours
+setInterval(sendPeriodicReminders, 5 * 60 * 60 * 1000);
+
+
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`========================================`);

@@ -72,6 +72,11 @@ const AdminDashboard = () => {
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [broadcastRole, setBroadcastRole] = useState('All');
+  const [broadcastBloodGroup, setBroadcastBloodGroup] = useState('All');
+  const [broadcastCity, setBroadcastCity] = useState('');
+  const [broadcastState, setBroadcastState] = useState('');
+  const [broadcastDonorStatus, setBroadcastDonorStatus] = useState('All');
+  const [broadcastLogs, setBroadcastLogs] = useState([]);
 
   // Dynamic Gallery Management State
   const [galleryList, setGalleryList] = useState([]);
@@ -110,6 +115,10 @@ const AdminDashboard = () => {
       // Fetch Gallery Items
       const galleryRes = await axios.get(`${API_URL}/api/gallery`);
       setGalleryList(galleryRes.data);
+
+      // Fetch admin notification logs
+      const logsRes = await axios.get(`${API_URL}/api/admin/notification-logs`, { headers });
+      setBroadcastLogs(logsRes.data);
 
     } catch (err) {
       console.error('Error fetching administrative telemetry', err);
@@ -232,15 +241,24 @@ const AdminDashboard = () => {
       await axios.post(`${API_URL}/api/admin/broadcast`, {
         title: broadcastTitle,
         message: broadcastMessage,
-        targetRole: broadcastRole
+        targetRole: broadcastRole,
+        bloodGroup: broadcastBloodGroup,
+        city: broadcastCity,
+        state: broadcastState,
+        availabilityStatus: broadcastDonorStatus
       }, { headers });
-      alert('Global notification broadcast successfully dispatched.');
+      alert('Notification broadcast successfully dispatched with filters.');
       setBroadcastTitle('');
       setBroadcastMessage('');
       setBroadcastRole('All');
+      setBroadcastBloodGroup('All');
+      setBroadcastCity('');
+      setBroadcastState('');
+      setBroadcastDonorStatus('All');
       loadSystemTelemetry();
     } catch (err) {
       console.error(err);
+      alert('Failed to dispatch broadcast.');
     } finally {
       setActionLoader(false);
     }
@@ -1001,57 +1019,171 @@ const AdminDashboard = () => {
             <div className="space-y-6 animate-fade-in">
               <div>
                 <h2 className="text-xl font-black">Global Administrative Dispatch Center</h2>
-                <p className="text-xs text-slate-500">Compile message templates and broadcast emergency announcements directly to active roles.</p>
+                <p className="text-xs text-slate-500">Compile message templates and broadcast emergency announcements directly to active roles with advanced filters.</p>
               </div>
 
-              <div className="p-6 bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm max-w-xl">
-                <form onSubmit={dispatchBroadcast} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Target Audience Group</label>
-                    <select
-                      value={broadcastRole}
-                      onChange={(e) => setBroadcastRole(e.target.value)}
-                      className="w-full p-2.5 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
+              <div className="grid md:grid-cols-3 gap-8 items-start">
+                {/* Form Card */}
+                <div className="md:col-span-1 p-6 bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm space-y-4">
+                  <h3 className="font-bold text-xs uppercase tracking-widest text-slate-400 border-b pb-2">Broadcast Controls</h3>
+                  <form onSubmit={dispatchBroadcast} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">Target Audience Group</label>
+                      <select
+                        value={broadcastRole}
+                        onChange={(e) => setBroadcastRole(e.target.value)}
+                        className="w-full p-2.5 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
+                      >
+                        <option value="All">All Platform Users (All Roles)</option>
+                        <option value="Donor">Active Blood Donors Only</option>
+                        <option value="Recipient">Registered Blood Recipients Only</option>
+                        <option value="Hospital">Verified Hospitals & Clinics Only</option>
+                      </select>
+                    </div>
+
+                    {broadcastRole === 'Donor' && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Blood Group</label>
+                          <select
+                            value={broadcastBloodGroup}
+                            onChange={(e) => setBroadcastBloodGroup(e.target.value)}
+                            className="w-full p-2.5 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
+                          >
+                            <option value="All">All Blood Groups</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Donor Availability Status</label>
+                          <select
+                            value={broadcastDonorStatus}
+                            onChange={(e) => setBroadcastDonorStatus(e.target.value)}
+                            className="w-full p-2.5 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
+                          >
+                            <option value="All">All Statuses</option>
+                            <option value="Available">Available</option>
+                            <option value="Busy">Busy</option>
+                            <option value="Not Available">Not Available</option>
+                            <option value="Emergency Only">Emergency Only</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Target City</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Tirupati"
+                          value={broadcastCity}
+                          onChange={(e) => setBroadcastCity(e.target.value)}
+                          className="w-full p-2.5 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Target State</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Andhra Pradesh"
+                          value={broadcastState}
+                          onChange={(e) => setBroadcastState(e.target.value)}
+                          className="w-full p-2.5 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">Announcement Message Title</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. 🚨 High Deficit Alert near Tirupati"
+                        value={broadcastTitle}
+                        onChange={(e) => setBroadcastTitle(e.target.value)}
+                        className="w-full p-2.5 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">Message Body Content</label>
+                      <textarea
+                        required
+                        rows="4"
+                        placeholder="Compile notification details to push live..."
+                        value={broadcastMessage}
+                        onChange={(e) => setBroadcastMessage(e.target.value)}
+                        className="w-full p-2.5 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none resize-none"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={actionLoader}
+                      className="w-full py-3 bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
                     >
-                      <option value="All">All Platform Users (All Roles)</option>
-                      <option value="Donor">Active Blood Donors Only</option>
-                      <option value="Recipient">Registered Blood Recipients Only</option>
-                      <option value="Hospital">Verified Hospitals & Clinics Only</option>
-                    </select>
-                  </div>
+                      <Megaphone className="w-4 h-4" /> {actionLoader ? 'Dispersing Broadcast...' : 'Dispatch Broadcast Alert'}
+                    </button>
+                  </form>
+                </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Announcement Message Title</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. 🚨 High Deficit Alert in Bengaluru"
-                      value={broadcastTitle}
-                      onChange={(e) => setBroadcastTitle(e.target.value)}
-                      className="w-full p-2.5 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
-                    />
+                {/* Logs Table Card */}
+                <div className="md:col-span-2 bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+                  <h3 className="font-bold text-xs uppercase tracking-widest text-slate-400 border-b pb-2">Broadcast Delivery Logs</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 dark:bg-dark-800/50 text-slate-500 font-bold border-b border-slate-200 dark:border-slate-800">
+                        <tr>
+                          <th className="p-3">Title & Message</th>
+                          <th className="p-3">Target Filters</th>
+                          <th className="p-3">Deliveries</th>
+                          <th className="p-3">Sender</th>
+                          <th className="p-3">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {broadcastLogs.length > 0 ? (
+                          broadcastLogs.map((log) => (
+                            <tr key={log._id} className="hover:bg-slate-50/50 dark:hover:bg-dark-800/10">
+                              <td className="p-3">
+                                <p className="font-bold text-slate-800 dark:text-white">{log.title}</p>
+                                <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{log.message}</p>
+                              </td>
+                              <td className="p-3 text-[10px] text-slate-500">
+                                <div>Role: <span className="font-semibold">{log.targetRole}</span></div>
+                                {log.targetRole === 'Donor' && (
+                                  <>
+                                    <div>Group: <span className="font-semibold">{log.bloodGroup}</span></div>
+                                    <div>Status: <span className="font-semibold">{log.donorStatusFilter}</span></div>
+                                  </>
+                                )}
+                                {(log.locationFilter?.city || log.locationFilter?.state) && (
+                                  <div>Loc: <span className="font-semibold">{[log.locationFilter.city, log.locationFilter.state].filter(Boolean).join(', ')}</span></div>
+                                )}
+                              </td>
+                              <td className="p-3 font-bold text-rose-600">{log.successCount} users</td>
+                              <td className="p-3 text-slate-400">{log.sentBy?.fullName || 'Admin'}</td>
+                              <td className="p-3 text-slate-400 text-[10px]">{new Date(log.createdAt).toLocaleString()}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="5" className="text-center p-8 text-slate-400 italic">No broadcast logs recorded.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Message Body Content</label>
-                    <textarea
-                      required
-                      rows="4"
-                      placeholder="Compile notification details to push live..."
-                      value={broadcastMessage}
-                      onChange={(e) => setBroadcastMessage(e.target.value)}
-                      className="w-full p-2.5 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none resize-none"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={actionLoader}
-                    className="w-full py-3 bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
-                  >
-                    <Megaphone className="w-4 h-4" /> {actionLoader ? 'Dispersing Broadcast...' : 'Dispatch Broadcast Alert'}
-                  </button>
-                </form>
+                </div>
               </div>
             </div>
           )}
