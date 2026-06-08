@@ -1511,6 +1511,127 @@ const DonorDashboard = () => {
         )}
       </AnimatePresence>
 
+      {/* Mobile Slide-Out Navigation Drawer */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setMobileMenuOpen(false)}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm md:hidden"
+            />
+            {/* Drawer Panel */}
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              className="fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-dark-900 flex flex-col shadow-2xl md:hidden overflow-y-auto"
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-rose-600 to-rose-700">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-black text-white border-2 border-white/30 text-sm">
+                    {user?.fullName?.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-black text-sm text-white truncate max-w-[160px]">{user?.fullName}</p>
+                    <p className="text-[10px] text-rose-100 font-bold uppercase tracking-wider">{rankObj.rank} • {user?.bloodGroup}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1.5 bg-white/20 hover:bg-white/30 rounded-xl text-white transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* XP Progress Bar */}
+              <div className="px-4 py-3 bg-slate-50 dark:bg-dark-950 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+                  <span>ONEDROP Level {Math.floor(userXP / 500) + 1}</span>
+                  <span className="text-rose-500">{userXP} XP</span>
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-dark-800 rounded-full h-1.5">
+                  <div className="h-full bg-rose-600 rounded-full transition-all" style={{ width: `${Math.min((userXP % 500) / 5, 100)}%` }} />
+                </div>
+              </div>
+
+              {/* Navigation Items */}
+              <nav className="flex-1 p-4 space-y-1">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-3 mb-2">Main Console</p>
+                {[
+                  { id: 'dashboard', label: 'Dashboard', icon: Activity, desc: 'Overview & Stats' },
+                  { id: 'requests', label: 'Blood Requests', icon: Heart, desc: 'Browse & Create Requests', badge: nearbyRequests.length },
+                  { id: 'smartMatch', label: 'Smart Match Finder', icon: Sparkles, desc: 'Find Eligible Donors' },
+                  { id: 'donations', label: 'Donations', icon: Calendar, desc: 'Cooldown & History' },
+                  { id: 'rewards', label: 'Rewards & Wallet', icon: Gift, desc: 'Points & Coupons' },
+                  { id: 'referrals', label: 'Referrals', icon: Share2, desc: 'Invite Friends & Earn' },
+                  { id: 'analytics', label: 'Analytics', icon: TrendingUp, desc: 'Performance Charts' },
+                  { id: 'community', label: 'Community', icon: Users, desc: 'Stories & Posts' },
+                  { id: 'campaigns', label: 'Campaigns', icon: BookOpen, desc: 'Nearby Blood Drives' },
+                  { id: 'notifications', label: 'Notifications', icon: Bell, desc: 'Alert Feed', badge: logs.filter(l => l.unread).length },
+                  { id: 'bloodbanks', label: 'Blood Banks', icon: Compass, desc: 'Find Local Blood Banks' },
+                  { id: 'settings', label: 'Settings', icon: Settings, desc: 'Profile & Preferences' }
+                ].map((item) => {
+                  const IconComp = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => { setActiveTab(item.id); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-all text-left ${
+                        isActive
+                          ? 'bg-rose-600 text-white shadow-lg shadow-rose-500/20'
+                          : 'hover:bg-slate-100 dark:hover:bg-dark-800 text-slate-700 dark:text-slate-200'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-xl flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-slate-100 dark:bg-dark-800'}`}>
+                        <IconComp className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-black truncate ${isActive ? 'text-white' : ''}`}>{item.label}</p>
+                        <p className={`text-[10px] truncate ${isActive ? 'text-rose-100' : 'text-slate-400'}`}>{item.desc}</p>
+                      </div>
+                      {item.badge > 0 && (
+                        <span className={`px-2 py-0.5 text-[9px] rounded-full font-black flex-shrink-0 ${isActive ? 'bg-white text-rose-600' : 'bg-rose-500 text-white'}`}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {/* Quick Actions at Bottom */}
+              <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                <button
+                  onClick={() => { setShowEditModal(true); setMobileMenuOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-dark-800 hover:bg-slate-200 dark:hover:bg-dark-700 text-slate-700 dark:text-slate-200 transition-all text-xs font-bold"
+                >
+                  <Settings className="w-4 h-4 text-slate-400" />
+                  Edit Medical Profile
+                </button>
+                <button
+                  onClick={() => { setSosPanicActive(!sosPanicActive); setMobileMenuOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-xs font-black uppercase tracking-wider ${
+                    sosPanicActive ? 'bg-rose-600 text-white animate-pulse' : 'bg-slate-900 text-white hover:bg-black'
+                  }`}
+                >
+                  <ShieldAlert className="w-4 h-4" />
+                  {sosPanicActive ? 'SOS Active - Tap to Disable' : 'Activate SOS Mode'}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Sidebar Navigation Panel */}
       <div className={`fixed inset-y-0 left-0 top-16 z-40 bg-white dark:bg-dark-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'} hidden md:flex flex-col justify-between py-6`}>
         <div className="space-y-6">
