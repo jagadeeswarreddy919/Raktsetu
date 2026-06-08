@@ -144,6 +144,15 @@ const RegisterPage = () => {
   const selectedRole = watch('role');
   const watchedPassword = watch('password', '');
 
+  // Auto-fill referral code from query parameter (e.g. ?ref=CODE)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const refParam = params.get('ref');
+    if (refParam) {
+      setValue('referralCode', refParam.toUpperCase());
+    }
+  }, [location.search, setValue]);
+
   // Prefill Google Redirect data dynamically
   useEffect(() => {
     if (prefillData.isNewUser) {
