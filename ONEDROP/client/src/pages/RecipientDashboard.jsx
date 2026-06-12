@@ -911,31 +911,7 @@ const RecipientDashboard = () => {
       <div className={`flex-grow md:pl-20 ${sidebarOpen ? 'md:pl-64' : 'md:pl-20'} pb-24 md:pb-10 pt-10`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 relative">
 
-          {/* Mobile Tab Scroll Selector (Slide Bar) */}
-          <div className="md:hidden flex overflow-x-auto whitespace-nowrap scrollbar-none gap-2 pb-2 pt-1">
-            {[
-              { id: 'requests', label: 'Requests & Pledges', icon: FileText },
-              { id: 'smartMatch', label: 'Smart Match Finder', icon: Sparkles },
-              { id: 'bloodbanks', label: 'Blood Banks', icon: Compass }
-            ].map((item) => {
-              const IconComp = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
-                    isActive 
-                      ? 'bg-primary-600 border-primary-600 text-white shadow-md' 
-                      : 'bg-white dark:bg-dark-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'
-                  }`}
-                >
-                  <IconComp className="w-4 h-4 flex-shrink-0" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          {/* Mobile: Navigation handled via left sidebar drawer (hamburger menu) and bottom nav */}
       
       {/* Floating Notifications Toasts */}
       <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-3 w-full max-w-md pointer-events-none">
@@ -1037,22 +1013,22 @@ const RecipientDashboard = () => {
       )}
 
       {/* Header Container */}
-      <div className="p-8 bg-slate-900 text-white rounded-3xl shadow-xl flex flex-wrap justify-between items-center relative overflow-hidden">
+      <div className="p-4 sm:p-8 bg-slate-900 text-white rounded-3xl shadow-xl flex flex-wrap justify-between items-center relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary-600/10 rounded-full blur-3xl -z-10"></div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setMobileMenuOpen(true)}
             className="md:hidden p-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-white transition-all shadow-sm flex-shrink-0"
           >
-            <Menu className="w-5.5 h-5.5" />
+            <Menu className="w-5 h-5" />
           </button>
-          <div>
+          <div className="min-w-0">
             <span className="px-3 py-1 text-[10px] font-black uppercase bg-primary-500 rounded-full shadow-sm">Recipient Panel</span>
-            <div className="flex flex-wrap items-center gap-3 mt-2">
-              <h1 className="text-3xl font-black">{user.fullName}</h1>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
+              <h1 className="text-xl sm:text-3xl font-black truncate max-w-[200px] sm:max-w-none">{user.fullName}</h1>
               <button 
                 onClick={() => setShowEditModal(true)}
-                className="px-3 py-1 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-xs font-bold transition-all shadow-sm"
+                className="px-3 py-1 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-xs font-bold transition-all shadow-sm flex-shrink-0"
               >
                 Edit Profile Coordinates
               </button>
@@ -1077,7 +1053,7 @@ const RecipientDashboard = () => {
             <div className="p-6 bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-lg space-y-6">
               <h3 className="font-bold text-lg flex items-center gap-2"><FileText className="text-primary-500" /> Create Blood Request</h3>
               <form onSubmit={handleCreateRequest} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Patient Name</label>
                     <input
@@ -1150,7 +1126,7 @@ const RecipientDashboard = () => {
                 </div>
 
                 {/* Location Fields for Request */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 mb-1">State</label>
                     <select
@@ -1198,8 +1174,8 @@ const RecipientDashboard = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="sm:col-span-2">
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Hospital Clinic Address</label>
                     <input
                       type="text"
@@ -2531,6 +2507,58 @@ const RecipientDashboard = () => {
           </>
         )}
       </AnimatePresence>
+
+      {/* Floating Bottom Nav for Mobile Devices */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-dark-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-850 py-2 px-6 flex justify-around md:hidden print:hidden">
+        {[
+          { id: 'main-home', label: 'Home', icon: Home, path: '/' },
+          { id: 'requests', label: 'Requests', icon: FileText },
+          { id: 'smartMatch', label: 'Match', icon: Sparkles },
+          { id: 'bloodbanks', label: 'Banks', icon: Compass },
+          { id: 'menu', label: 'Menu', icon: Menu, action: () => setMobileMenuOpen(true) }
+        ].map((item) => {
+          const ItemIcon = item.icon;
+          const isActive = activeTab === item.id;
+
+          if (item.path) {
+            return (
+              <Link
+                key={item.id}
+                to={item.path}
+                className="flex flex-col items-center gap-1 text-[10px] font-extrabold transition-all hover:scale-110 active:scale-95 text-slate-400 dark:text-slate-500 hover:text-rose-500"
+              >
+                <ItemIcon className="w-5.5 h-5.5" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          }
+
+          if (item.action) {
+            return (
+              <button
+                key={item.id}
+                onClick={item.action}
+                className="flex flex-col items-center gap-1 text-[10px] font-extrabold transition-all hover:scale-110 active:scale-95 text-slate-400 dark:text-slate-500 hover:text-rose-500"
+              >
+                <ItemIcon className="w-5.5 h-5.5" />
+                <span>{item.label}</span>
+              </button>
+            );
+          }
+
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`flex flex-col items-center gap-1 text-[10px] font-extrabold transition-all hover:scale-110 active:scale-95 ${isActive ? 'text-primary-500' : 'text-slate-400 dark:text-slate-500'}`}
+            >
+              <ItemIcon className="w-5.5 h-5.5" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       </div>
     </div>
   );

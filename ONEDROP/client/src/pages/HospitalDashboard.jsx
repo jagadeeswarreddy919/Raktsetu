@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldAlert, Activity, ClipboardList, Database, Save, CalendarRange, 
   Plus, Heart, MessageSquare, Phone, MapPin, X, RefreshCw, Loader2,
-  Printer, Search, Award, Users, Sparkles, AlertCircle, Menu
+  Printer, Search, Award, Users, Sparkles, AlertCircle, Menu, Home
 } from 'lucide-react';
 import { updateProfileSuccess, logout } from '../redux/authSlice';
 import { 
@@ -792,18 +792,18 @@ const HospitalDashboard = () => {
         )}
       </AnimatePresence>
 
-      <div className="p-8 bg-slate-900 text-white rounded-3xl shadow-xl flex justify-between items-center relative overflow-hidden">
+      <div className="p-4 sm:p-8 bg-slate-900 text-white rounded-3xl shadow-xl flex justify-between items-center relative overflow-hidden">
 
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary-600/10 rounded-full blur-3xl -z-10"></div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={() => setMobileMenuOpen(true)}
             className="md:hidden p-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-white transition-all shadow-sm flex-shrink-0"
           >
             <Menu className="w-5.5 h-5.5" />
           </button>
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="px-3 py-1 text-[10px] font-black uppercase bg-primary-500 rounded-full">Hospital Dashboard</span>
               {user?.isVerifiedHospital ? (
                 <span className="px-3 py-1 text-[10px] font-black uppercase bg-emerald-600 rounded-full">Verified Medical Partner</span>
@@ -812,7 +812,7 @@ const HospitalDashboard = () => {
               )}
             </div>
             <div className="flex flex-wrap items-center gap-3 mt-2">
-              <h1 className="text-3xl font-black">{user.fullName}</h1>
+              <h1 className="text-xl sm:text-3xl font-black truncate max-w-[200px] sm:max-w-none">{user.fullName}</h1>
               <button 
                 onClick={() => setShowEditProfileModal(true)}
                 className="px-3 py-1 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-xs font-bold transition-all shadow-sm"
@@ -820,13 +820,13 @@ const HospitalDashboard = () => {
                 Edit Profile Coordinates
               </button>
             </div>
-            <p className="text-xs text-slate-400">License ID: {user.hospitalLicenseNumber || 'Pending'} • Location: {user.city}, {user.state}</p>
+            <p className="text-xs text-slate-400 truncate">License ID: {user.hospitalLicenseNumber || 'Pending'} • Location: {user.city}, {user.state}</p>
           </div>
         </div>
       </div>
 
-      {/* Premium Glassmorphic Tab Selector (Scrollable Slide Bar on Mobile) */}
-      <div className="flex overflow-x-auto whitespace-nowrap scrollbar-none p-1 bg-slate-100 dark:bg-dark-800/80 rounded-2xl shadow-inner border border-slate-200/50 dark:border-slate-800/80 max-w-2xl gap-1">
+      {/* Premium Glassmorphic Tab Selector (Hidden on mobile, side navigation / bottom nav used instead) */}
+      <div className="hidden md:flex overflow-x-auto whitespace-nowrap scrollbar-none p-1 bg-slate-100 dark:bg-dark-800/80 rounded-2xl shadow-inner border border-slate-200/50 dark:border-slate-800/80 max-w-2xl gap-1">
         <button
           onClick={() => setActiveTab('operations')}
           className={`flex-grow flex-shrink-0 py-3 px-4 text-center text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 ${
@@ -2277,6 +2277,57 @@ const HospitalDashboard = () => {
           </>
         )}
       </AnimatePresence>
+
+      {/* Floating Bottom Nav for Mobile Devices */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-dark-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-850 py-2 px-6 flex justify-around md:hidden print:hidden">
+        {[
+          { id: 'main-home', label: 'Home', icon: Home, path: '/' },
+          { id: 'operations', label: 'Operations', icon: Activity },
+          { id: 'donorRegistry', label: 'Match', icon: Users },
+          { id: 'browseRequests', label: 'Requests', icon: Heart },
+          { id: 'menu', label: 'Menu', icon: Menu, action: () => setMobileMenuOpen(true) }
+        ].map((item) => {
+          const ItemIcon = item.icon;
+          const isActive = activeTab === item.id;
+
+          if (item.path) {
+            return (
+              <Link
+                key={item.id}
+                to={item.path}
+                className="flex flex-col items-center gap-1 text-[10px] font-extrabold transition-all hover:scale-110 active:scale-95 text-slate-400 dark:text-slate-500 hover:text-rose-500"
+              >
+                <ItemIcon className="w-5.5 h-5.5" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          }
+
+          if (item.action) {
+            return (
+              <button
+                key={item.id}
+                onClick={item.action}
+                className="flex flex-col items-center gap-1 text-[10px] font-extrabold transition-all hover:scale-110 active:scale-95 text-slate-400 dark:text-slate-500 hover:text-rose-500"
+              >
+                <ItemIcon className="w-5.5 h-5.5" />
+                <span>{item.label}</span>
+              </button>
+            );
+          }
+
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`flex flex-col items-center gap-1 text-[10px] font-extrabold transition-all hover:scale-110 active:scale-95 ${isActive ? 'text-primary-500' : 'text-slate-400 dark:text-slate-500'}`}
+            >
+              <ItemIcon className="w-5.5 h-5.5" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };

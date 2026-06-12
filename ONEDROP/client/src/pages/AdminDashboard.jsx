@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldCheck, Users, Activity, FileText, Database, ShieldAlert, Award, 
   BrainCircuit, TrendingUp, Download, Heart, Megaphone, Calendar, MapPin, 
   Gift, RefreshCw, BarChart2, Plus, Trash2, Key, Info, Check, X, AlertTriangle, Play, Hospital, Image,
-  Globe, Search, Phone, MessageSquare, Menu
+  Globe, Search, Phone, MessageSquare, Menu, Home
 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, AreaChart, Area } from 'recharts';
 import axios from 'axios';
@@ -672,19 +673,19 @@ const AdminDashboard = () => {
     <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       
       {/* Enterprise Title Block */}
-      <div className="p-8 bg-slate-900 text-white rounded-3xl shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden border border-slate-800">
+      <div className="p-4 sm:p-8 bg-slate-900 text-white rounded-3xl shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden border border-slate-800">
         <div className="absolute right-0 top-0 w-64 h-64 bg-primary-600/10 rounded-full blur-3xl -z-10"></div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={() => setMobileMenuOpen(true)}
             className="lg:hidden p-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-white transition-all shadow-sm flex-shrink-0"
           >
             <Menu className="w-5.5 h-5.5" />
           </button>
-          <div>
+          <div className="min-w-0">
             <span className="px-3.5 py-1 text-[10px] font-black uppercase tracking-wider bg-primary-500 text-white rounded-full">Secure Enterprise Controller</span>
-            <h1 className="text-3xl font-black mt-2 tracking-tight">ONEDROP Command Center</h1>
-            <p className="text-xs text-slate-400 mt-1 max-w-xl">Supervise emergency blood lifelines, evaluate machine learning shortage models, audit security permissions, and direct platform activities.</p>
+            <h1 className="text-xl sm:text-3xl font-black mt-2 tracking-tight truncate max-w-[250px] sm:max-w-none">ONEDROP Command Center</h1>
+            <p className="text-xs text-slate-400 mt-1 max-w-xl truncate">Supervise emergency blood lifelines, ML models, security permissions, and platform registers.</p>
           </div>
         </div>
         <button
@@ -695,8 +696,8 @@ const AdminDashboard = () => {
         </button>
       </div>
 
-      {/* Mobile Tab Scroll Selector (Slide Bar) */}
-      <div className="lg:hidden flex overflow-x-auto whitespace-nowrap scrollbar-none gap-2 pb-2 mt-6">
+      {/* Mobile Tab Scroll Selector (Hidden on mobile, side navigation / bottom nav used instead) */}
+      <div className="hidden">
         {menuTiers.flatMap(tier => tier.items).map((item) => {
           const IconComp = item.icon;
           const isActive = activePanel === item.name;
@@ -2471,8 +2472,61 @@ const AdminDashboard = () => {
           </>
         )}
       </AnimatePresence>
+
+      {/* Floating Bottom Nav for Mobile Devices */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-dark-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-850 py-2 px-6 flex justify-around lg:hidden print:hidden">
+        {[
+          { id: 'main-home', label: 'Home', icon: Home, path: '/' },
+          { id: 'Analytics Dashboard', label: 'Analytics', icon: BarChart2 },
+          { id: 'Emergency Control Room', label: 'Emergency', icon: Heart },
+          { id: 'User Verification', label: 'Verify', icon: ShieldCheck },
+          { id: 'menu', label: 'Menu', icon: Menu, action: () => setMobileMenuOpen(true) }
+        ].map((item) => {
+          const ItemIcon = item.icon;
+          const isActive = activePanel === item.id;
+
+          if (item.path) {
+            return (
+              <Link
+                key={item.id}
+                to={item.path}
+                className="flex flex-col items-center gap-1 text-[10px] font-extrabold transition-all hover:scale-110 active:scale-95 text-slate-400 dark:text-slate-500 hover:text-rose-500"
+              >
+                <ItemIcon className="w-5.5 h-5.5" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          }
+
+          if (item.action) {
+            return (
+              <button
+                key={item.id}
+                onClick={item.action}
+                className="flex flex-col items-center gap-1 text-[10px] font-extrabold transition-all hover:scale-110 active:scale-95 text-slate-400 dark:text-slate-500 hover:text-rose-500"
+              >
+                <ItemIcon className="w-5.5 h-5.5" />
+                <span>{item.label}</span>
+              </button>
+            );
+          }
+
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActivePanel(item.id)}
+              className={`flex flex-col items-center gap-1 text-[10px] font-extrabold transition-all hover:scale-110 active:scale-95 ${isActive ? 'text-rose-600' : 'text-slate-400 dark:text-slate-500'}`}
+            >
+              <ItemIcon className="w-5.5 h-5.5" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };
 
 export default AdminDashboard;
+
+

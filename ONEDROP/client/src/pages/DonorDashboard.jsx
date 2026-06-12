@@ -1705,40 +1705,7 @@ const DonorDashboard = () => {
       <div className={`flex-grow md:pl-20 ${sidebarOpen ? 'md:pl-64' : 'md:pl-20'} pb-24 md:pb-10 pt-10`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
-          {/* Mobile Tab Scroll Selector (Slide Bar) */}
-          <div className="md:hidden flex overflow-x-auto whitespace-nowrap scrollbar-none gap-2 pb-2 pt-1">
-            {[
-              { id: 'dashboard', label: 'Dashboard', icon: Activity },
-              { id: 'requests', label: 'Blood Requests', icon: Heart },
-              { id: 'smartMatch', label: 'Smart Match Finder', icon: Sparkles },
-              { id: 'donations', label: 'Donations', icon: Calendar },
-              { id: 'rewards', label: 'Rewards', icon: Gift },
-              { id: 'referrals', label: 'Referrals', icon: Share2 },
-              { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-              { id: 'community', label: 'Community', icon: Users },
-              { id: 'campaigns', label: 'Campaigns', icon: BookOpen },
-              { id: 'notifications', label: 'Notifications', icon: Bell },
-              { id: 'bloodbanks', label: 'Blood Banks', icon: Compass },
-              { id: 'settings', label: 'Settings', icon: Settings }
-            ].map((item) => {
-              const IconComp = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
-                    isActive 
-                      ? 'bg-rose-600 border-rose-600 text-white shadow-md' 
-                      : 'bg-white dark:bg-dark-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'
-                  }`}
-                >
-                  <IconComp className="w-4 h-4 flex-shrink-0" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          {/* Mobile: Navigation handled via left sidebar drawer (hamburger menu) and bottom nav */}
 
           {/* Glassmorphic Email Verification Banner */}
           {isUnverified && (
@@ -1803,21 +1770,21 @@ const DonorDashboard = () => {
           )}
 
           {/* Dynamic Customized Header Greeting */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-dark-900/60 backdrop-blur-md p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-dark-900/60 backdrop-blur-md p-4 sm:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-rose-600/5 rounded-full blur-3xl -z-10"></div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => setMobileMenuOpen(true)}
                 className="md:hidden p-2 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all flex-shrink-0"
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <div>
+              <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                   <span>ONEDROP Enterprise Hub</span>
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
                 </p>
-                <h1 className="text-2xl md:text-3xl font-black mt-1">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-black mt-1 truncate">
                   {getTimeBasedGreeting(lang)}, {user?.fullName?.split(' ')[0]} ❤️
                 </h1>
                 <p className="text-xs text-slate-500 mt-1">
@@ -1827,7 +1794,7 @@ const DonorDashboard = () => {
             </div>
 
             {/* Quick Actions Dropdowns */}
-            <div className="flex items-center flex-wrap gap-3">
+            <div className="flex items-center flex-wrap gap-2 sm:gap-3 w-full md:w-auto">
               {/* Donation Availability Status Dropdown Selector */}
               <div className="relative inline-block">
                 <select
@@ -1871,17 +1838,17 @@ const DonorDashboard = () => {
                   if (handleActionBlock('toggle SOS mode')) return;
                   setSosPanicActive(!sosPanicActive);
                 }} 
-                className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md flex items-center gap-1.5 ${
+                className={`px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md flex items-center gap-1.5 ${
                   sosPanicActive 
                     ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse' 
                     : 'bg-slate-900 hover:bg-black text-white'
                 }`}
               >
-                <ShieldAlert className="w-4 h-4" /> SOS MODE
+                <ShieldAlert className="w-4 h-4" /> SOS
               </button>
               <button 
                 onClick={() => setShowEditModal(true)}
-                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-xs font-extrabold rounded-xl border border-slate-200 dark:border-slate-700 transition-all"
+                className="hidden sm:block px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-xs font-extrabold rounded-xl border border-slate-200 dark:border-slate-700 transition-all"
               >
                 {LOCALIZATION[lang].editProfile}
               </button>
