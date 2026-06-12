@@ -198,115 +198,54 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Slide-Out Sidebar Navigation */}
+      {/* Mobile nav content */}
       {menuOpen && (
-        <>
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
-            onClick={() => setMenuOpen(false)}
-          />
-          {/* Sidebar Panel */}
-          <div className="fixed inset-y-0 left-0 z-50 w-72 max-w-[80vw] bg-white dark:bg-dark-900 shadow-2xl flex flex-col md:hidden overflow-y-auto">
-            {/* Sidebar Header */}
-            <div className="flex items-center justify-between p-5 bg-gradient-to-r from-primary-600 to-rose-700 border-b border-primary-700">
-              <div className="flex items-center gap-3">
-                <ONEDROPLogo />
-                <span className="text-xl font-black text-white tracking-tight">ONE<span className="text-rose-200">DROP</span></span>
-              </div>
-              <button
+        <div className="md:hidden bg-white dark:bg-dark-900 border-b border-slate-200 dark:border-slate-800 transition-all">
+          <div className="px-2 pt-2 pb-4 space-y-1">
+            <Link to="/" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-base font-semibold rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Home</Link>
+
+            {showLandingSections && LANDING_SECTIONS.map((section) => (
+              <a
+                key={section.id}
+                href={`/#${section.id}`}
                 onClick={() => setMenuOpen(false)}
-                className="p-1.5 bg-white/20 hover:bg-white/30 rounded-xl text-white transition-all"
+                className="block px-3 py-2 text-base font-semibold rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+                {section.label}
+              </a>
+            ))}
 
-            {/* Navigation Items */}
-            <nav className="flex-1 p-4 space-y-1">
-              <Link to="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-                <Activity className="w-5 h-5 text-primary-500 flex-shrink-0" />
-                Home
-              </Link>
+            {isAuthenticated && user && (
+              <>
+                <a href="/#gallery" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-base font-semibold rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Gallery</a>
+                <Link to="/campaigns" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-base font-semibold rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Campaigns</Link>
+                <Link to="/blogs" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-base font-semibold rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Articles</Link>
+              </>
+            )}
 
-              {showLandingSections && LANDING_SECTIONS.map((section) => (
-                <a
-                  key={section.id}
-                  href={`/#${section.id}`}
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+            {isAuthenticated && user ? (
+              <>
+                <Link to={getDashboardLink()} onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-base font-semibold rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Dashboard</Link>
+                <Link to="/chat" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-base font-semibold rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Chat</Link>
+                <button
+                  onClick={() => { handleLogout(); setMenuOpen(false); }}
+                  className="w-full text-left block px-3 py-2 text-base font-semibold rounded-md text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20"
                 >
-                  <Heart className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                  {section.label}
-                </a>
-              ))}
-
-              {isAuthenticated && user && (
-                <>
-                  <div className="pt-3 pb-1">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-3">Quick Access</p>
-                  </div>
-                  <a href="/#gallery" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-                    <Heart className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                    Gallery
-                  </a>
-                  <Link to="/campaigns" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-                    <Heart className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                    Campaigns
-                  </Link>
-                  <Link to="/blogs" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-                    <Heart className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                    Articles
-                  </Link>
-                  <Link to={getDashboardLink()} onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/20 hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-all">
-                    <Activity className="w-5 h-5 text-primary-500 flex-shrink-0" />
-                    Dashboard
-                  </Link>
-                  <Link to="/chat" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-                    <MessageSquare className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                    Chat
-                  </Link>
-                </>
-              )}
-            </nav>
-
-            {/* Sidebar Footer */}
-            <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
-              {isAuthenticated && user ? (
-                <>
-                  <div className="flex items-center gap-3 px-3 py-2">
-                    {user.profileImage ? (
-                      <img src={user.profileImage} alt={user.fullName} className="w-9 h-9 rounded-full border-2 border-primary-500" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 font-bold border-2 border-primary-500 text-sm">
-                        {user.fullName ? user.fullName.charAt(0) : '?'}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200 truncate">{user.fullName}</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase">{user.role}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => { handleLogout(); setMenuOpen(false); }}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/30 text-sm font-bold rounded-xl transition-all"
-                  >
-                    <LogOut className="w-4 h-4" /> Logout
-                  </button>
-                </>
-              ) : (
-                <div className="flex flex-col space-y-2">
-                  <Link to="/login" onClick={() => setMenuOpen(false)} className="w-full text-center py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
-                    Login
-                  </Link>
-                  <Link to="/register" onClick={() => setMenuOpen(false)} className="w-full text-center py-2.5 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl shadow-md transition-all">
-                    Register
-                  </Link>
-                </div>
-              )}
-            </div>
+                  Logout
+                </button>
+              </>
+            ) : (
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex flex-col space-y-2 px-3">
+                <Link to="/login" onClick={() => setMenuOpen(false)} className="w-full text-center py-2 text-base font-semibold text-slate-700 dark:text-slate-300">
+                  Login
+                </Link>
+                <Link to="/register" onClick={() => setMenuOpen(false)} className="w-full text-center py-2 text-base font-semibold text-white bg-primary-600 rounded-lg">
+                  Register
+                </Link>
+              </div>
+            )}
           </div>
-        </>
+        </div>
       )}
     </nav>
   );
